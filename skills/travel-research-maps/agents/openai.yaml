@@ -1,0 +1,4 @@
+interface:
+  display_name: "旅行研究与地图收藏"
+  short_description: "基于近一年旅行证据筛选地点并审核保存至 Google Maps"
+  default_prompt: "Use $travel-research-maps to research Kyoto for a three-day trip and prepare a review list."

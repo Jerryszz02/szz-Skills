@@ -1,0 +1,4 @@
+interface:
+  display_name: "Article Summary"
+  short_description: "按原文顺序总结文章、网页或文档，并提供段落映射与可选 PDF"
+  default_prompt: "使用 $article-summary 按原文顺序总结这个链接，并标注对应原文位置。"
