@@ -11,7 +11,7 @@
 路径：
 
 ```text
-skills/article-summary/
+article-summary/
 ```
 
 ### travel-research-maps
@@ -21,7 +21,7 @@ skills/article-summary/
 路径：
 
 ```text
-skills/travel-research-maps/
+travel-research-maps/
 ```
 
 ## Repository Structure
@@ -29,15 +29,14 @@ skills/travel-research-maps/
 ```text
 .
 ├── README.md
-└── skills/
-    ├── article-summary/
-    │   ├── SKILL.md
-    │   └── agents/
-    └── travel-research-maps/
-        ├── SKILL.md
-        ├── agents/
-        ├── references/
-        └── scripts/
+├── article-summary/
+│   ├── SKILL.md
+│   └── agents/
+└── travel-research-maps/
+    ├── SKILL.md
+    ├── agents/
+    ├── references/
+    └── scripts/
 ```
 
 ## Install Locally
@@ -45,8 +44,8 @@ skills/travel-research-maps/
 在 Windows PowerShell 中运行：
 
 ```powershell
-Copy-Item -Recurse .\skills\article-summary "$env:USERPROFILE\.codex\skills\article-summary"
-Copy-Item -Recurse .\skills\travel-research-maps "$env:USERPROFILE\.codex\skills\travel-research-maps"
+Copy-Item -Recurse .\article-summary "$env:USERPROFILE\.codex\skills\article-summary"
+Copy-Item -Recurse .\travel-research-maps "$env:USERPROFILE\.codex\skills\travel-research-maps"
 ```
 
 如果目标目录已存在，先确认本地是否有未提交改动，再决定是否覆盖。
