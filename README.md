@@ -26,7 +26,7 @@ travel-research-maps/
 
 ### plan-project-docs
 
-在正式 plan 完成后，根据 plan 内容和项目结构按需生成 `docs/planning/` 下的项目指导文档与索引。
+在正式 plan 完成后，或用户明确要求为缺少相关文档的现有项目生成文档时，根据 plan 内容或项目证据按需生成 `docs/planning/` 下的项目指导文档与索引。
 
 路径：
 

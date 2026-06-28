@@ -1,4 +1,4 @@
 interface:
   display_name: "Plan Project Docs"
-  short_description: "根据完成后的 plan 生成项目内指导文档与索引"
-  default_prompt: "使用 $plan-project-docs 根据已完成的 plan 和当前项目架构生成 docs/planning 指导文档。"
+  short_description: "根据 plan 或现有项目证据生成指导文档"
+  default_prompt: "使用 $plan-project-docs 根据已完成的 plan 或现有项目证据生成 docs/planning 指导文档。"
