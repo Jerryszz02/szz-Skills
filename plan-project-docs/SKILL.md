@@ -28,11 +28,15 @@ description: 将已完成 plan 或现有项目证据转换为项目内 docs/plan
 3. 读取 `references/document-catalog.md`，选择最小文档集合。
    - Plan 归档模式下，只有当 plan 和仓库证据满足目录中的“需要生成”规则时，才生成对应文档。
    - 现有项目梳理模式下，只有当仓库证据满足目录中的“需要生成”规则时，才生成对应文档。
+   - 先合并后拆分：如果两个文档服务同一批维护决策，优先合并到更核心的文档，并在 `README.md` 的跳过表中说明合并去向。
+   - 默认最小集合是 `README.md` 加 1-3 篇真正需要长期引用的文档；只有复杂项目或重大变更才扩展到更多文件。
+   - `project-brief.md`、`user-flow.md`、`architecture.md`、`decision-log.md` 容易和 `prd.md` 或 `technical-design.md` 重复，只有存在独立维护价值时才单独生成；否则把背景、流程、架构边界和关键决策合并到 `prd.md` 或 `technical-design.md`。
    - 没有 API 改动时不要生成 `api-design.md`；没有持久化改动时不要生成 `database-design.md`；没有部署/发布事项时不要生成 `release-plan.md`。
    - 对小型 bug fix 或窄范围重构，只生成最小有用的 planning note 和索引。
 4. 创建或更新 `docs/planning/`。
    - 每次都创建或更新 `docs/planning/README.md` 作为索引。
    - 每个生成文件都要包含：文档目的、适用范围、来自 plan 或项目证据的具体内容、非目标，以及实现或验收指引。
+   - 不要为目录清单中的每个类别填模板；如果文档正文主要是在重复另一个文档、`SKILL.md`、README 或现有代码，把它合并或跳过。
    - 如果目标文件已经存在，把新信息合并进去并保留人工写入内容。不要覆盖无关章节。
    - 对 plan 或项目证据中缺失的信息标记为 `待确认`；不要编造需求、schema、路由、凭据、时间线或负责人。
 5. 汇报改动。
