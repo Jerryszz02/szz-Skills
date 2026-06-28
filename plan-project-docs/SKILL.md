@@ -1,79 +1,79 @@
 ---
 name: plan-project-docs
-description: Turn a completed implementation plan into project-local planning documents under docs/planning. Use after Codex produces a formal plan for a large engineering project, major feature, architecture change, or product direction, especially when the user asks to save the plan, generate PRD-style docs, create project guidance, or prepare reference documents before implementation.
+description: 将已完成的实现计划转换为项目内 docs/planning 下的规划文档。用于 Codex 为大型工程项目、主要功能、架构调整或产品方向产出正式 plan 之后，尤其是用户要求保存计划、生成 PRD 类文档、创建项目指导文档，或在实现前准备参考文档时。
 ---
 
 # Plan Project Docs
 
-Generate only the project guidance documents needed for the completed plan and the actual repository architecture. The output is a maintainable `docs/planning/` folder that future implementation work can cite.
+根据已完成的 plan 和真实项目架构，只生成后续开发真正需要的项目指导文档。输出结果是可维护的 `docs/planning/` 目录，供之后的实现工作引用。
 
-## Workflow
+## 工作流
 
-1. Identify the source plan.
-   - Use the most recent formal plan in the conversation, including `<proposed_plan>` content when present.
-   - If multiple plans conflict, use the newest user-approved or user-provided version.
-   - If there is no concrete plan, ask for one instead of inventing scope.
-2. Inspect the target project before writing.
-   - Confirm the project root from the current working directory or explicit user path.
-   - Read likely sources of truth first: `README*`, `AGENTS.md`, existing `docs/`, package manifests, build manifests, route/API/schema files, and visible app entrypoints.
-   - Use read-only commands for discovery. Do not infer APIs, database tables, deployment targets, or product behavior from filenames alone.
-3. Read `references/document-catalog.md` and select the minimum document set.
-   - Generate documents only when the plan and repo evidence meet the catalog's "Need when" rules.
-   - Do not generate `api-design.md` without API work, `database-design.md` without persistence changes, or `release-plan.md` without deployment/release work.
-   - For small bug fixes or narrow refactors, generate only the smallest useful planning note and the index.
-4. Write or update `docs/planning/`.
-   - Create `docs/planning/README.md` as the index for every run.
-   - For each generated file, include: purpose, scope, plan-derived content, non-goals, and implementation or acceptance guidance.
-   - If a target file already exists, merge new information into it and preserve human-written content. Do not overwrite unrelated sections.
-   - Mark missing plan details as `待确认`; do not fabricate requirements, schemas, routes, credentials, timelines, or ownership.
-5. Report what changed.
-   - List generated and updated planning files.
-   - List intentionally skipped catalog documents with short reasons.
-   - Mention any unresolved `待确认` items that could affect implementation.
+1. 确认来源 plan。
+   - 使用对话中最近的正式 plan；如果存在 `<proposed_plan>`，优先使用其中内容。
+   - 如果多个 plan 互相冲突，使用用户最新认可或最新提供的版本。
+   - 如果没有具体 plan，先要求用户提供 plan，不要自行编造范围。
+2. 写入前先检查目标项目。
+   - 从当前工作目录或用户明确给出的路径确认项目根目录。
+   - 优先读取真实来源：`README*`、`AGENTS.md`、已有 `docs/`、包管理清单、构建清单、路由/API/schema 文件，以及可见的应用入口。
+   - 使用只读命令做发现。不要只根据文件名推断 API、数据库表、部署目标或产品行为。
+3. 读取 `references/document-catalog.md`，选择最小文档集合。
+   - 只有当 plan 和仓库证据满足目录中的“需要生成”规则时，才生成对应文档。
+   - 没有 API 改动时不要生成 `api-design.md`；没有持久化改动时不要生成 `database-design.md`；没有部署/发布事项时不要生成 `release-plan.md`。
+   - 对小型 bug fix 或窄范围重构，只生成最小有用的 planning note 和索引。
+4. 创建或更新 `docs/planning/`。
+   - 每次都创建或更新 `docs/planning/README.md` 作为索引。
+   - 每个生成文件都要包含：文档目的、适用范围、来自 plan 的具体内容、非目标，以及实现或验收指引。
+   - 如果目标文件已经存在，把新信息合并进去并保留人工写入内容。不要覆盖无关章节。
+   - 对 plan 中缺失的信息标记为 `待确认`；不要编造需求、schema、路由、凭据、时间线或负责人。
+5. 汇报改动。
+   - 列出已生成和已更新的 planning 文件。
+   - 列出有意跳过的目录文档，并给出简短理由。
+   - 提醒可能影响实现的未解决 `待确认` 项。
 
-## File Rules
+## 文件规则
 
-- Write only under the target project's `docs/planning/` directory unless the user explicitly requests a different location.
-- Do not modify product code, tests, config, secrets, `.env` files, dependency manifests, or deployment files.
-- Do not paste secrets, tokens, private keys, cookie values, or environment variable values into planning documents.
-- Keep documents concrete to the current plan. Avoid generic templates, speculative features, or broad architecture essays.
-- Prefer Chinese output when the user is working in Chinese; preserve English technical names, paths, APIs, and commands.
+- 默认只写入目标项目的 `docs/planning/` 目录，除非用户明确指定其他位置。
+- 不要修改产品代码、测试、配置、secrets、`.env`、依赖清单或部署文件。
+- 不要把 secrets、token、私钥、Cookie 值或环境变量值写入规划文档。
+- 文档必须贴合当前 plan，避免通用模板、臆测功能或宽泛架构文章。
+- 用户使用中文时默认输出中文；英文技术名、路径、API 和命令保持原样。
 
-## Index Requirements
+## 索引要求
 
-`docs/planning/README.md` must include:
+`docs/planning/README.md` 必须包含：
 
-- the plan title or short description;
-- the date of generation or update;
-- the project root inspected;
-- a table of generated or updated documents with one-line purpose statements;
-- a table of skipped catalog documents with reasons;
-- a short list of open questions or `待确认` items, if any.
+- plan 标题或简短描述；
+- 生成或更新时间；
+- 已检查的项目根目录；
+- 已生成或已更新文档表格，并为每个文档写一句用途；
+- 已跳过目录文档表格，并写明跳过原因；
+- 未解决问题或 `待确认` 项，如果有。
 
-## Document Requirements
+## 单篇文档要求
 
-Each generated planning file must include these sections unless a different structure is clearly better for that document type:
+每个生成的 planning 文件默认包含以下章节；如果某类文档明显更适合其他结构，可以调整：
 
 ```markdown
-# Document Title
+# 文档标题
 
-## Purpose
+## 文档目的
 
-## Scope
+## 适用范围
 
-## Plan Details
+## Plan 细节
 
-## Non-Goals
+## 非目标
 
-## Implementation Guidance
+## 实现指引
 
-## Acceptance Criteria
+## 验收标准
 
-## Open Questions
+## 待确认
 ```
 
-Use concise prose and tables where they make implementation decisions easier to scan. Remove empty sections only when the file's purpose does not need them.
+使用简洁正文；当表格能让实现决策更容易扫描时，优先使用表格。只有当某个章节确实不适用于该文件时，才删除空章节。
 
-## Resources
+## 资源
 
-- `references/document-catalog.md`: document selection rules, scope definitions, required content, and skip conditions.
+- `references/document-catalog.md`：文档选择规则、适用范围定义、必需内容和跳过条件。

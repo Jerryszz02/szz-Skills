@@ -1,260 +1,260 @@
-# Document Catalog
+# 文档目录
 
-Use this catalog to decide which files to generate under `docs/planning/`. Generate the smallest set that materially helps future implementation.
+使用本目录决定要在 `docs/planning/` 下生成哪些文件。只生成对后续实现有实际帮助的最小文档集合。
 
-## Selection Rules
+## 选择规则
 
-- Always generate or update `README.md` as the planning index.
-- Prefer fewer, concrete documents over a full template set.
-- A document is needed when the plan changes behavior, architecture, data, APIs, user flows, security posture, release process, or operations.
-- A document is not needed when it would only restate the plan, contain placeholders, or describe a subsystem the plan does not touch.
-- If evidence is incomplete but the document is still required, write `待确认` for unknowns and explain the dependency.
+- 每次都生成或更新 `README.md` 作为 planning 索引。
+- 优先生成少量具体文档，而不是完整模板套件。
+- 当 plan 改变产品行为、架构、数据、API、用户流程、安全边界、发布流程或运维方式时，对应文档才需要生成。
+- 如果某个文档只会重复 plan、填充占位内容，或描述 plan 没有触及的子系统，就不需要生成。
+- 如果证据不完整但文档仍然必要，对未知项写 `待确认`，并说明它依赖什么信息。
 
-## Catalog
+## 文档清单
 
 ### `project-brief.md`
 
-Purpose: define why the project exists and what outcome the plan is trying to achieve.
+目的：说明项目为什么存在，以及这份 plan 试图达成什么结果。
 
-Need when:
-- starting a new project;
-- beginning a major feature or product direction;
-- success criteria, audience, scope, or constraints need to stay visible across later work.
+需要生成：
+- 启动新项目；
+- 开始主要功能或产品方向；
+- 成功标准、受众、范围或约束需要在后续工作中持续可见。
 
-Do not need when:
-- the task is a narrow bug fix, cleanup, or small implementation detail;
-- the repository already has an up-to-date brief covering the same plan.
+不需要生成：
+- 任务只是窄范围 bug fix、清理或小实现细节；
+- 仓库里已有覆盖同一 plan 的最新 brief。
 
-Include:
-- background and problem statement;
-- target users or operators;
-- goals and non-goals;
-- success metrics or acceptance outcomes;
-- scope boundaries;
-- constraints, assumptions, and dependencies.
+应包含：
+- 背景和问题定义；
+- 目标用户或操作人员；
+- 目标和非目标；
+- 成功指标或验收结果；
+- 范围边界；
+- 约束、假设和依赖。
 
 ### `prd.md`
 
-Purpose: define the product behavior that must exist when implementation is complete.
+目的：定义实现完成后必须存在的产品行为。
 
-Need when:
-- the plan introduces or changes user-visible behavior;
-- workflows, permissions, content, UX states, or business rules must be implemented;
-- acceptance depends on product requirements rather than only code structure.
+需要生成：
+- plan 新增或改变用户可见行为；
+- 工作流、权限、内容、UX 状态或业务规则需要落地；
+- 验收依赖产品需求，而不只是代码结构。
 
-Do not need when:
-- the change is internal-only and has no product behavior;
-- the plan is purely infrastructure or developer tooling.
+不需要生成：
+- 改动完全是内部实现，没有产品行为变化；
+- plan 纯粹是基础设施或开发者工具。
 
-Include:
-- users and use cases;
-- functional requirements;
-- non-functional requirements;
-- states, permissions, and edge cases;
-- acceptance criteria;
-- explicit non-goals.
+应包含：
+- 用户和使用场景；
+- 功能需求；
+- 非功能需求；
+- 状态、权限和边界情况；
+- 验收标准；
+- 明确的非目标。
 
 ### `architecture.md`
 
-Purpose: explain the system shape and boundaries that implementation must preserve.
+目的：解释实现必须遵守的系统形态和边界。
 
-Need when:
-- the plan touches multiple modules, services, packages, or apps;
-- there are important dependencies, data flows, deployment boundaries, or ownership boundaries;
-- long-term maintainability or extensibility is a core concern.
+需要生成：
+- plan 触及多个模块、服务、包或应用；
+- 存在重要依赖、数据流、部署边界或所有权边界；
+- 长期可维护性或可扩展性是核心问题。
 
-Do not need when:
-- changes are isolated to one component with obvious local behavior;
-- an existing architecture doc already covers the same design and only needs a pointer from the index.
+不需要生成：
+- 改动只局限在一个组件内，且本地行为明显；
+- 已有架构文档已经覆盖同一设计，只需要从索引指向它。
 
-Include:
-- module or service responsibilities;
-- data/control flow;
-- external dependencies;
-- deployment/runtime shape when relevant;
-- security and trust boundaries;
-- important alternatives rejected.
+应包含：
+- 模块或服务职责；
+- 数据流或控制流；
+- 外部依赖；
+- 相关部署或运行时形态；
+- 安全和信任边界；
+- 被否决的重要备选方案。
 
 ### `technical-design.md`
 
-Purpose: translate the plan into concrete implementation guidance.
+目的：把 plan 转换为具体实现指引。
 
-Need when:
-- implementation has non-trivial logic, sequencing, state handling, compatibility concerns, or integration details;
-- another engineer should be able to implement without re-deciding the approach.
+需要生成：
+- 实现包含非平凡逻辑、顺序、状态处理、兼容性问题或集成细节；
+- 另一个工程师需要不用重新决策就能实现。
 
-Do not need when:
-- the change is a one-file mechanical edit or obvious bug fix;
-- the plan itself is already a sufficiently detailed implementation spec.
+不需要生成：
+- 改动是单文件机械编辑或明显 bug fix；
+- plan 本身已经足够作为详细实现规格。
 
-Include:
-- selected approach;
-- affected subsystems;
-- data/state flow;
-- error handling and fallback behavior;
-- compatibility constraints;
-- task breakdown;
-- acceptance guidance.
+应包含：
+- 选定方案；
+- 受影响子系统；
+- 数据或状态流；
+- 错误处理和 fallback 行为；
+- 兼容性约束；
+- 任务拆分；
+- 验收指引。
 
 ### `user-flow.md`
 
-Purpose: describe how users or operators move through the experience.
+目的：描述用户或操作人员如何完成体验流程。
 
-Need when:
-- the plan adds or changes UI, CLI, onboarding, permissions, or operational workflows;
-- error, empty, loading, cancellation, or retry states matter.
+需要生成：
+- plan 新增或改变 UI、CLI、onboarding、权限或操作流程；
+- 错误、空状态、加载、取消或重试状态很重要。
 
-Do not need when:
-- there is no user or operator interaction change;
-- behavior is entirely backend/internal.
+不需要生成：
+- 没有用户或操作人员交互变化；
+- 行为完全是后端或内部实现。
 
-Include:
-- entry points and exits;
-- primary flow;
-- alternate and failure flows;
-- permissions or role differences;
-- UI/CLI states and copy-sensitive decisions;
-- acceptance scenarios.
+应包含：
+- 入口和出口；
+- 主流程；
+- 备用流程和失败流程；
+- 权限或角色差异；
+- UI/CLI 状态和文案敏感决策；
+- 验收场景。
 
 ### `api-design.md`
 
-Purpose: define service boundaries and request/response contracts.
+目的：定义服务边界和请求/响应契约。
 
-Need when:
-- the plan adds, removes, or changes HTTP/RPC/GraphQL/WebSocket/CLI/plugin APIs;
-- clients and servers need a stable contract;
-- error handling, auth, pagination, idempotency, or versioning matters.
+需要生成：
+- plan 新增、删除或改变 HTTP/RPC/GraphQL/WebSocket/CLI/plugin API；
+- 客户端和服务端需要稳定契约；
+- 错误处理、鉴权、分页、幂等或版本策略很重要。
 
-Do not need when:
-- no API contract changes;
-- API behavior is already fully specified in an existing contract file and only needs an index pointer.
+不需要生成：
+- 没有 API 契约变化；
+- API 行为已经在现有契约文件中完整定义，只需要索引指向它。
 
-Include:
-- endpoints or operations;
-- request and response shapes;
-- authentication and authorization;
-- validation rules;
-- errors and status codes;
-- pagination, idempotency, and versioning when relevant;
-- compatibility notes.
+应包含：
+- endpoint 或 operation；
+- 请求和响应结构；
+- 认证和授权；
+- 校验规则；
+- 错误和状态码；
+- 相关分页、幂等和版本策略；
+- 兼容性说明。
 
 ### `database-design.md`
 
-Purpose: define persistent data changes.
+目的：定义持久化数据改动。
 
-Need when:
-- the plan adds, removes, or changes tables, documents, collections, indexes, migrations, or durable storage semantics;
-- data retention, backfill, consistency, or rollback matters.
+需要生成：
+- plan 新增、删除或改变表、文档、集合、索引、迁移或持久化语义；
+- 数据保留、回填、一致性或回滚很重要。
 
-Do not need when:
-- there are no persistence changes;
-- data changes are limited to in-memory state or local cache without durable schema implications.
+不需要生成：
+- 没有持久化变化；
+- 数据变化只涉及内存状态或本地缓存，没有持久化 schema 影响。
 
-Include:
-- entities and relationships;
-- fields and meanings;
-- indexes and constraints;
-- migration and rollback plan;
-- data lifecycle and retention;
-- backfill or compatibility notes.
+应包含：
+- 实体和关系；
+- 字段及含义；
+- 索引和约束；
+- 迁移和回滚计划；
+- 数据生命周期和保留策略；
+- 回填或兼容性说明。
 
 ### `security-privacy.md`
 
-Purpose: record security, privacy, and trust-boundary decisions.
+目的：记录安全、隐私和信任边界决策。
 
-Need when:
-- the plan handles user data, credentials, permissions, external services, file access, network calls, browser automation, payments, or sensitive operations;
-- access control, auditability, data minimization, or abuse resistance matters.
+需要生成：
+- plan 处理用户数据、凭据、权限、外部服务、文件访问、网络调用、浏览器自动化、支付或敏感操作；
+- 访问控制、审计、数据最小化或滥用防护很重要。
 
-Do not need when:
-- the change has no meaningful security or privacy impact;
-- the relevant controls are unchanged and already documented elsewhere.
+不需要生成：
+- 改动没有有意义的安全或隐私影响；
+- 相关控制没有变化，并且已经在其他地方记录。
 
-Include:
-- sensitive data and data classification;
-- authentication and authorization;
-- secrets handling;
-- trust boundaries;
-- audit/logging expectations;
-- privacy constraints;
-- threats, mitigations, and residual risks.
+应包含：
+- 敏感数据和数据分级；
+- 认证和授权；
+- secrets 处理；
+- 信任边界；
+- 审计和日志预期；
+- 隐私约束；
+- 威胁、缓解措施和剩余风险。
 
 ### `test-plan.md`
 
-Purpose: define how implementation will be verified.
+目的：定义如何验证实现。
 
-Need when:
-- the plan changes behavior, architecture, data, APIs, or user workflows;
-- acceptance criteria need executable or manual verification.
+需要生成：
+- plan 改变行为、架构、数据、API 或用户流程；
+- 验收标准需要可执行或人工验证。
 
-Do not need when:
-- the change is documentation-only and the index already records review checks;
-- the plan is a trivial text edit with no behavior impact.
+不需要生成：
+- 改动仅为文档，索引已经记录 review 检查；
+- plan 是没有行为影响的简单文字编辑。
 
-Include:
-- unit, integration, E2E, manual, performance, and security checks as applicable;
-- fixtures or test data;
-- regression scenarios;
-- acceptance criteria;
-- commands to run when known;
-- risks not covered by tests.
+应包含：
+- 适用的单元、集成、E2E、人工、性能和安全检查；
+- fixture 或测试数据；
+- 回归场景；
+- 验收标准；
+- 已知可运行命令；
+- 测试未覆盖的风险。
 
 ### `release-plan.md`
 
-Purpose: define how the change reaches users safely.
+目的：定义改动如何安全到达用户。
 
-Need when:
-- deployment, migration, feature flags, staged rollout, data backfill, or rollback strategy matters;
-- the project has production users or operational risk.
+需要生成：
+- 部署、迁移、feature flag、分阶段发布、数据回填或回滚策略很重要；
+- 项目有生产用户或运维风险。
 
-Do not need when:
-- the change is local-only, documentation-only, or not released through a deployment path;
-- release mechanics are unchanged and trivial.
+不需要生成：
+- 改动只在本地、仅为文档，或不通过部署路径发布；
+- 发布机制没有变化且非常简单。
 
-Include:
-- rollout sequence;
-- feature flags or staged exposure;
-- migration and backfill order;
-- rollback steps;
-- monitoring and alerting;
-- release checklist.
+应包含：
+- 发布顺序；
+- feature flag 或分阶段曝光；
+- 迁移和回填顺序；
+- 回滚步骤；
+- 监控和告警；
+- 发布 checklist。
 
 ### `operations-runbook.md`
 
-Purpose: help operators run and debug the resulting system.
+目的：帮助操作人员运行和排查最终系统。
 
-Need when:
-- the plan introduces or changes services, scheduled jobs, long-running processes, queues, external integrations, or production operations;
-- future incidents need concrete commands or log locations.
+需要生成：
+- plan 新增或改变服务、定时任务、长期运行进程、队列、外部集成或生产运维行为；
+- 未来事故处理需要具体命令或日志位置。
 
-Do not need when:
-- no runtime or operational behavior changes;
-- existing runbooks remain accurate and only need an index pointer.
+不需要生成：
+- 没有运行时或运维行为变化；
+- 现有 runbook 仍然准确，只需要索引指向它。
 
-Include:
-- start/stop/restart procedures;
-- configuration locations without secret values;
-- logs and health checks;
-- common failure modes;
-- troubleshooting steps;
-- backup, restore, and recovery notes when relevant.
+应包含：
+- 启动、停止、重启步骤；
+- 不含 secret 值的配置位置；
+- 日志和健康检查；
+- 常见失败模式；
+- 排查步骤；
+- 相关备份、恢复和灾难恢复说明。
 
 ### `decision-log.md`
 
-Purpose: preserve important decisions and tradeoffs.
+目的：保留重要决策和取舍。
 
-Need when:
-- the plan chooses between materially different product, architecture, vendor, model, data, or release options;
-- a future maintainer would otherwise re-open the same decision.
+需要生成：
+- plan 在产品、架构、供应商、模型、数据或发布方案之间做了重要选择；
+- 未来维护者否则会重新打开同一个决策。
 
-Do not need when:
-- there are no meaningful alternatives or tradeoffs;
-- decisions are minor implementation details.
+不需要生成：
+- 没有有意义的备选方案或取舍；
+- 决策只是小实现细节。
 
-Include:
-- decision date;
-- decision statement;
-- context;
-- options considered;
-- rationale;
-- consequences and follow-up triggers.
+应包含：
+- 决策日期；
+- 决策结论；
+- 背景；
+- 考虑过的选项；
+- 理由；
+- 后果和需要重新评估的触发条件。
