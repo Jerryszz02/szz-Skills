@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Project Docs"
+  short_description: "根据完成后的 plan 生成项目内指导文档与索引"
+  default_prompt: "Use $plan-project-docs to generate docs/planning guidance from the completed plan and current project architecture."

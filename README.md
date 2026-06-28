@@ -24,14 +24,29 @@ article-summary/
 travel-research-maps/
 ```
 
+### plan-project-docs
+
+在正式 plan 完成后，根据 plan 内容和项目结构按需生成 `docs/planning/` 下的项目指导文档与索引。
+
+路径：
+
+```text
+plan-project-docs/
+```
+
 ## Repository Structure
 
 ```text
 .
+├── AGENTS.md
 ├── README.md
 ├── article-summary/
 │   ├── SKILL.md
 │   └── agents/
+├── plan-project-docs/
+│   ├── SKILL.md
+│   ├── agents/
+│   └── references/
 └── travel-research-maps/
     ├── SKILL.md
     ├── agents/
@@ -41,14 +56,24 @@ travel-research-maps/
 
 ## Install Locally
 
-在 Windows PowerShell 中运行：
+macOS / Linux:
+
+```bash
+mkdir -p ~/.codex/skills
+cp -R ./article-summary ~/.codex/skills/article-summary
+cp -R ./plan-project-docs ~/.codex/skills/plan-project-docs
+cp -R ./travel-research-maps ~/.codex/skills/travel-research-maps
+```
+
+Windows PowerShell:
 
 ```powershell
 Copy-Item -Recurse .\article-summary "$env:USERPROFILE\.codex\skills\article-summary"
+Copy-Item -Recurse .\plan-project-docs "$env:USERPROFILE\.codex\skills\plan-project-docs"
 Copy-Item -Recurse .\travel-research-maps "$env:USERPROFILE\.codex\skills\travel-research-maps"
 ```
 
-如果目标目录已存在，先确认本地是否有未提交改动，再决定是否覆盖。
+如果目标目录已存在，先确认本地是否有未提交改动，再决定是否覆盖。安装或更新后重启 Codex，让 skill 注册表重新加载。
 
 ## Notes
 
