@@ -16,7 +16,7 @@ article-summary/
 
 ### travel-research-maps
 
-为指定目的地研究景点和餐厅，基于近一年独立旅行内容做候选收集、评分和事实核验。默认输出中文审核清单；只有在明确批准后，才会把已核验地点保存到 Google Maps 列表。
+为指定目的地研究景点和餐厅，使用 Firecrawl 从近一年多平台公开旅行内容中收集候选、评分并事实核验。Google Maps 只用于地址、营业状态和风险核验；默认输出中文审核清单，只有在明确批准后，才会把已核验地点保存到 Google Maps 列表。
 
 路径：
 
@@ -50,6 +50,7 @@ plan-project-docs/
 └── travel-research-maps/
     ├── SKILL.md
     ├── agents/
+    ├── docs/
     ├── references/
     └── scripts/
 ```

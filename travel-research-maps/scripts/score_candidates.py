@@ -38,7 +38,7 @@ def independence_keys(item: dict[str, Any], index: int) -> set[str]:
     return keys
 
 
-def score_candidate(candidate: dict[str, Any], as_of: date) -> dict[str, Any]:
+def score_candidate(candidate: dict[str, Any], as_of: date, min_positive_platforms_for_priority: int = 1) -> dict[str, Any]:
     kind = candidate.get("type")
     if kind not in VALID_TYPES:
         raise ValueError(f"candidate {candidate.get('name', '<unnamed>')} has invalid type: {kind!r}")
@@ -74,6 +74,13 @@ def score_candidate(candidate: dict[str, Any], as_of: date) -> dict[str, Any]:
     score = sum(SCORES[item.get("stance", "neutral")] for item in effective)
     positive_sources = sum(SCORES[item.get("stance", "neutral")] > 0 for item in effective)
     negative_sources = sum(SCORES[item.get("stance", "neutral")] < 0 for item in effective)
+    positive_platforms = sorted(
+        {
+            str(item.get("source", "unknown")).strip().lower()
+            for item in effective
+            if SCORES[item.get("stance", "neutral")] > 0
+        }
+    )
     hard_risks = list(candidate.get("hard_risks", []))
 
     if hard_risks:
@@ -92,12 +99,17 @@ def score_candidate(candidate: dict[str, Any], as_of: date) -> dict[str, Any]:
         tier = "excluded"
         reason = "正向证据或净分不足"
 
+    if tier == "priority" and len(positive_platforms) < min_positive_platforms_for_priority:
+        tier = "backup"
+        reason = f"达到分数门槛但正向平台少于 {min_positive_platforms_for_priority} 个"
+
     return {
         "name": candidate.get("name"),
         "type": kind,
         "tier": tier,
         "net_score": score,
         "positive_sources": positive_sources,
+        "positive_platforms": positive_platforms,
         "negative_sources": negative_sources,
         "hard_risks": hard_risks,
         "reason": reason,
@@ -117,11 +129,19 @@ def main() -> int:
     parser.add_argument("--input", help="Input JSON path; defaults to stdin")
     parser.add_argument("--output", help="Output JSON path; defaults to stdout")
     parser.add_argument("--as-of", help="Research date in YYYY-MM-DD; defaults to today")
+    parser.add_argument(
+        "--min-positive-platforms-for-priority",
+        type=int,
+        default=1,
+        help="Minimum distinct positive source platforms required for priority tier; defaults to 1 for compatibility.",
+    )
     args = parser.parse_args()
 
     as_of = parse_date(args.as_of) if args.as_of else date.today()
     if as_of is None:
         parser.error("--as-of must use YYYY-MM-DD")
+    if args.min_positive_platforms_for_priority < 1:
+        parser.error("--min-positive-platforms-for-priority must be >= 1")
 
     payload = read_json(args.input)
     candidates = payload.get("candidates")
@@ -130,7 +150,9 @@ def main() -> int:
 
     result = {
         "as_of": as_of.isoformat(),
-        "candidates": [score_candidate(candidate, as_of) for candidate in candidates],
+        "candidates": [
+            score_candidate(candidate, as_of, args.min_positive_platforms_for_priority) for candidate in candidates
+        ],
     }
     rendered = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.output:
