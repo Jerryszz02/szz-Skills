@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Demand Discovery"
+  short_description: "用 Firecrawl 发现未满足的产品需求机会"
+  default_prompt: "使用 $product-demand-discovery 搜索公开互联网信息，发现有市场空间且竞品不拥挤的产品机会。"
