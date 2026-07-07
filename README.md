@@ -10,6 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Firecrawl 多平台旅行证据筛选景点和餐厅，生成中文审核清单，并在批准后保存到 Google Maps | “去哪里旅游”“做个旅游计划”“看一下哪里的景点/餐厅”“加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
+| `non-gpt-subagent-worker` | 可用 | 当用户要求 subagent/worker 使用 Ollama、LM Studio 或 DeepSeek 等非 OpenAI 模型时，用脚本启动外部 worker 并汇总结果 | “开 sub-agent 用本地模型”“用 LM Studio worker 并行查代码”“用 DeepSeek 做子任务” |
 
 ## How This Repository Works
 
@@ -154,11 +155,12 @@ python3 -m unittest test_score_candidates.py
 
 ### 功能
 
-`plan-project-docs` 用于把已经完成的正式 plan，或一个现有项目的真实仓库证据，整理成后续开发可引用的 `docs/planning/` 文档。它的目标不是生成一整套模板，而是选择最小必要文档集合，避免文档膨胀。
+`plan-project-docs` 用于把已经完成的正式 plan、即将执行的正式 plan，或一个现有项目的真实仓库证据，整理成后续开发可引用的 `docs/planning/` 文档。它的目标不是生成一整套模板，而是选择最小必要文档集合，避免文档膨胀。
 
-它支持两种模式：
+它支持三种模式：
 
 - Plan 归档模式：Codex 已经为大型工程、主要功能、架构调整或产品方向产出正式 plan，用户要求保存计划、生成 PRD 类文档或实现前准备项目指导文档。
+- 执行前准备模式：用户要求执行一个正式 plan 时，在开始修改产品代码、测试、配置或项目文档之前，先生成或更新 `docs/planning/`。
 - 现有项目梳理模式：用户明确要求为一个已经存在且缺少相关规划文档的项目生成 `docs/planning/`。
 
 ### 怎么用
@@ -202,6 +204,50 @@ python3 -m unittest test_score_candidates.py
 - 默认只写目标项目的 `docs/planning/`。
 - 不修改产品代码、测试、配置、依赖清单、部署文件、`.env` 或 secrets。
 - 如果已有同类 planning 文档，会优先更新索引或合并信息，不重复生成一套。
+
+## non-gpt-subagent-worker
+
+路径：`non-gpt-subagent-worker/`
+
+### 功能
+
+`non-gpt-subagent-worker` 用于把非 OpenAI 模型作为外部 worker 参与 Codex 工作流。当用户同时提到“开 sub-agent / subagent / worker / 并行委派”和“Ollama / LM Studio / DeepSeek / 本地模型 / 非 OpenAI 模型 / 便宜模型”时触发。
+
+它不会声称能把 Codex 原生 subagent 切换到非 OpenAI provider。实际方式是通过脚本调用：
+
+- Ollama：`codex exec --oss --local-provider ollama`
+- LM Studio：`codex exec --oss --local-provider lmstudio`
+- DeepSeek：使用 `DEEPSEEK_API_KEY` 调用 DeepSeek OpenAI-compatible chat endpoint
+
+### 怎么用
+
+单个 worker：
+
+```bash
+non-gpt-subagent-worker/scripts/run-worker.sh \
+  --provider lmstudio \
+  --model zai-org_glm-4.5-air \
+  --cwd /Users/jerryszz/Desktop/Projects/example \
+  --sandbox workspace-write \
+  --task-file /tmp/worker-task.md \
+  --output /tmp/worker-result.md
+```
+
+多个 worker：
+
+```bash
+non-gpt-subagent-worker/scripts/run-parallel-workers.sh \
+  --tasks /tmp/non-gpt-worker-tasks.json \
+  --output-dir /tmp/non-gpt-worker-results \
+  --max-parallel 3
+```
+
+### 边界
+
+- 默认 sandbox 是 `workspace-write`，但脚本只允许 `read-only` 和 `workspace-write`，不会使用 `danger-full-access`。
+- DeepSeek API key 必须来自环境变量 `DEEPSEEK_API_KEY`，不得写入任务 prompt、日志、仓库文件或回复。
+- DeepSeek 直接 API 路径是文本 worker，不具备 Codex 工具或自动读仓库能力；需要主 agent 提供必要上下文。
+- 主 agent 必须审查 worker 输出；worker 改过文件时，需要检查 diff 并运行最小验证。
 
 ## product-demand-discovery
 
@@ -284,6 +330,11 @@ Markdown 报告应包含：
 │   ├── SKILL.md
 │   ├── agents/
 │   └── references/
+├── non-gpt-subagent-worker/
+│   ├── SKILL.md
+│   ├── agents/
+│   ├── references/
+│   └── scripts/
 ├── product-demand-discovery/
 │   ├── SKILL.md
 │   ├── agents/
@@ -298,7 +349,7 @@ Markdown 报告应包含：
 
 ## Install Locally
 
-以下命令安装本仓库当前全部 4 个 skill。安装或更新后需要重启 Codex。
+以下命令安装本仓库当前全部 5 个 skill。安装或更新后需要重启 Codex。
 
 macOS / Linux:
 
@@ -306,6 +357,7 @@ macOS / Linux:
 mkdir -p ~/.codex/skills
 rsync -a --delete --exclude .DS_Store ./article-summary/ ~/.codex/skills/article-summary/
 rsync -a --delete --exclude .DS_Store ./plan-project-docs/ ~/.codex/skills/plan-project-docs/
+rsync -a --delete --exclude .DS_Store ./non-gpt-subagent-worker/ ~/.codex/skills/non-gpt-subagent-worker/
 rsync -a --delete --exclude .DS_Store ./product-demand-discovery/ ~/.codex/skills/product-demand-discovery/
 rsync -a --delete --exclude .DS_Store ./travel-research-maps/ ~/.codex/skills/travel-research-maps/
 ```
@@ -316,6 +368,7 @@ Windows PowerShell:
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills" | Out-Null
 Copy-Item -Recurse .\article-summary "$env:USERPROFILE\.codex\skills\article-summary"
 Copy-Item -Recurse .\plan-project-docs "$env:USERPROFILE\.codex\skills\plan-project-docs"
+Copy-Item -Recurse .\non-gpt-subagent-worker "$env:USERPROFILE\.codex\skills\non-gpt-subagent-worker"
 Copy-Item -Recurse .\product-demand-discovery "$env:USERPROFILE\.codex\skills\product-demand-discovery"
 Copy-Item -Recurse .\travel-research-maps "$env:USERPROFILE\.codex\skills\travel-research-maps"
 ```
