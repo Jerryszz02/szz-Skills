@@ -1,4 +1,4 @@
 interface:
   display_name: "Plan Project Docs"
-  short_description: "根据 plan 或现有项目证据生成指导文档"
-  default_prompt: "使用 $plan-project-docs 根据已完成的 plan 或现有项目证据生成 docs/planning 指导文档；如果用户要求执行正式 plan，先生成项目文档再执行。"
+  short_description: "创建、审计并同步项目 planning 文档"
+  default_prompt: "使用 $plan-project-docs 根据正式 plan 与当前项目证据创建或同步 docs/planning，并检查历史状态与当前实现是否一致。"
