@@ -1,33 +1,27 @@
-# non-gpt-subagent-worker 安全与隐私说明
-
-## 文档目的
-
-记录新增 skill 中涉及外部模型、本地命令、文件写入和凭据处理的边界。
+# subagent-orchestrator 安全与隐私说明
 
 ## 适用范围
 
-适用于 `non-gpt-subagent-worker` 的 skill 文档、脚本和测试。非目标是管理用户全局 Codex provider、DeepSeek 账号或本地模型安装。
-
-## Plan 或项目证据
-
-- 用户要求支持 Ollama、LM Studio 和 DeepSeek。
-- 计划要求 DeepSeek 从 `DEEPSEEK_API_KEY` 读取凭据，不把 key 写入日志。
-- AGENTS 要求不得存储 secrets、tokens、private keys 或 `.env` 值。
+覆盖 DeepSeek Harness、Kimi Code、原生 Luna/Terra worker 的任务委派、文件修改、凭据和验收边界。
 
 ## 安全边界
 
-- 默认 sandbox 为 `workspace-write`，但只允许 `read-only` 和 `workspace-write` 两档。
-- 脚本不得调用 `danger-full-access` 或 `--dangerously-bypass-approvals-and-sandbox`。
-- worker prompt 必须要求不读取、不打印、不请求 secrets。
-- DeepSeek API key 只能来自环境变量，dry-run 和错误信息不得输出 key。
-- DeepSeek 直接 API 路径没有 Codex 工具，不应声称已读取仓库文件。
+- DeepSeek 与 Kimi 的 detached worktree 只隔离 Git 修改冲突，不是操作系统安全沙箱。
+- 不向 worker 发送 secrets、token、Cookie、私钥、`.env` 值、私密登录态或账户访问任务。
+- 认证、支付、安全结论、迁移、破坏性 Git、架构决定、集成和最终验收由主 Agent 负责。
+- 外部 worker 只能修改 task packet 的允许路径；允许路径上的主工作区未提交改动会阻止启动。
+- runner 不自动应用 patch。主 Agent 必须检查 manifest、scope、status、patch 和实际验证结果。
+- 只有根/主 Agent 可以调用 `spawn_agent`；所有 worker 的 task packet 都必须显式禁止嵌套委派。
+- 原生 spawn 前检查实时并发余量；没有空位时不通过失败调用探测容量。
 
-## 验收标准
+## 凭据处理
 
-- 测试覆盖 `danger-full-access` 被拒绝。
-- 测试覆盖缺少 `DEEPSEEK_API_KEY` 时失败信息清晰。
-- dry-run 输出不包含任何 secret 值。
+- runner 不读取、打印或保存 DSH/Kimi 的凭据配置；它只调用用户已配置的 CLI profile。
+- 不执行 `--dump-config`，避免把用户覆盖层或敏感配置写入日志。
+- DSH 的 reasoning stream 保存于指定 artifact 目录，可能包含任务上下文；该目录必须位于仓库外并按敏感工作产物处理。
 
-## 待确认
+## 剩余风险
 
-- 如果未来支持更多 OpenAI-compatible provider，需要为每个 provider 明确独立的凭据环境变量和日志脱敏规则。
+- 外部 CLI 继承用户进程环境，worktree 无法阻止进程访问仓库外文件，因此敏感任务必须留在主 Agent。
+- Skill 是行为契约，不是 runtime 级强制拦截器；未加载或不遵循此 Skill 的 Agent 仍可能绕过闸门。
+- 第三方模型与服务的数据保留政策不由本仓库控制。

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Subagent Orchestrator"
+  short_description: "委派前置闸门与 DeepSeek 优先路由"
+  default_prompt: "使用 $subagent-orchestrator 先通过委派闸门，再按 DeepSeek、Kimi、Luna、Terra 的顺序路由有界任务。"
+policy:
+  allow_implicit_invocation: true
