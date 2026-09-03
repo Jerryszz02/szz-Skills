@@ -2,7 +2,7 @@
 
 ## 文档目的
 
-说明 `travel-research-maps` 在 Firecrawl 多平台来源扩展后的存在目的、目标用户、范围边界和成功标准。
+说明 `travel-research-maps` 的无 API Key 多平台研究路径、目标用户、范围边界和成功标准。
 
 ## 适用范围
 
@@ -12,14 +12,14 @@
 
 | 证据 | 产品含义 |
 | --- | --- |
-| `SKILL.md` | 默认使用 Firecrawl 搜索、抓取和抽取公开旅行内容。 |
+| `SKILL.md` | 默认使用 Keyless Firecrawl，再用浏览器和电脑控制读取公开旅行内容。 |
 | `scoring-rubric.md` | 证据必须可识别平台、URL、作者或频道、日期、立场和营销状态。 |
 | `score_candidates.py` | 评分器保持离线确定性，并可要求优先项至少有 2 个正向平台。 |
 | `README.md` | Google Maps 只用于核验和批准后的列表保存。 |
 
 ## 背景和目标
 
-旧流程依赖已登录 Chrome 小红书页面，稳定性受账号状态、验证码和页面限制影响。新版目标是把研究入口改为 Firecrawl MCP 多平台公开内容收集，并继续保持可审计、可评分、可人工批准的地点清单工作流。
+旧流程依赖已登录 Chrome 小红书页面，稳定性受账号状态、验证码和页面限制影响；当前 Firecrawl MCP 启动器还会读取 Keychain API Key。新版目标是使用显式空 API Key 的 Firecrawl Keyless 发现公开内容，以浏览器和电脑控制读取及核验，并继续保持可审计、可评分、可人工批准的地点清单工作流。
 
 ## 目标用户
 
@@ -40,11 +40,11 @@
 
 ## 成功标准
 
-- `SKILL.md` 明确 Firecrawl 主路径、多平台策略和覆盖不足停止规则。
+- `SKILL.md` 明确 Keyless Firecrawl、浏览器和电脑控制的顺序、多平台策略和覆盖不足停止规则。
 - 评分输出包含正向平台信息，并能把单平台高分候选降为备选。
 - `python3 -m unittest test_score_candidates.py` 在 `scripts/` 下通过。
 - 用户批准前不会写入 Google Maps。
 
 ## 待确认
 
-- Firecrawl 对不同社交平台的可抓取覆盖率需在真实任务中验证。
+- Keyless Firecrawl 与浏览器/电脑控制对不同社交平台的公开内容覆盖率需在真实任务中验证。

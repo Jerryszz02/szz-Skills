@@ -2,7 +2,7 @@
 
 ## 文档目的
 
-定义 Firecrawl 多平台来源扩展完成后必须存在的用户可见行为、业务规则和验收标准。
+定义无 API Key 多平台研究路径必须存在的用户可见行为、业务规则和验收标准。
 
 ## 适用范围
 
@@ -13,7 +13,7 @@
 | 证据 | 产品行为 |
 | --- | --- |
 | `SKILL.md` frontmatter | 旅游计划、景点、美食和地图收藏请求会触发该 skill。 |
-| `SKILL.md` 工作流 | Firecrawl 是主研究路径；不可访问内容只记录缺口，不计分。 |
+| `SKILL.md` 工作流 | Keyless Firecrawl、浏览器与电脑控制依序研究；不可访问内容只记录缺口，不计分。 |
 | `scoring-rubric.md` | 优先项需要满足分数、正向来源和正向平台门槛。 |
 | `score_candidates.py` | 支持 `--min-positive-platforms-for-priority`。 |
 | `README.md` | Google Maps 写入必须得到明确批准。 |
@@ -22,7 +22,7 @@
 
 | 场景 | 期望结果 |
 | --- | --- |
-| 用户说“去哪里旅游”或“做个旅游计划” | Codex 提取目的地和日期，进入 Firecrawl 多平台研究流程。 |
+| 用户说“去哪里旅游”或“做个旅游计划” | Codex 提取目的地和日期，进入 Keyless Firecrawl、浏览器与电脑控制多平台研究流程。 |
 | 用户想看某地景点或餐厅推荐 | Codex 收集近期独立内容，输出可审核地点清单。 |
 | 用户想把地点放进 Google Maps | Codex 先输出审核清单并请求批准，批准后才保存唯一匹配地点。 |
 
@@ -35,8 +35,8 @@
    - 可接受语言、指定来源和已有 Google Maps 列表名作为可选输入。
 
 2. 证据收集
-   - 默认使用 Firecrawl MCP：`firecrawl_search` 发现 URL，`firecrawl_scrape` 或 `firecrawl_extract` 抽取内容，必要时使用 `firecrawl_map`。
-   - 每次处理 Firecrawl search 结果后调用 `firecrawl_search_feedback`。
+   - 默认先使用 Keyless Firecrawl，并以 `new Firecrawl({ apiKey: "" })` 显式禁用 API Key；不得调用 Firecrawl MCP、启动器、环境变量或 Keychain。
+   - 对公开页面使用浏览器控制读取正文和证据；浏览器控制不能完成时才用电脑控制，且不绕过访问限制。
    - 中国大陆目的地以小红书和 Bilibili 为主；中国大陆之外目的地以小红书、YouTube、Instagram 和公开旅行内容为主。
    - 只采纳能识别作者或频道、发布日期和推荐立场的公开内容。
    - 景点和餐厅覆盖门槛分别计算，不能互相抵扣。
@@ -73,13 +73,13 @@
 - 证据和结论必须可审计。
 - 评分器必须保持确定性，且不执行网络请求。
 - 输出必须清楚标注未确认项，不能把推测写成事实。
-- Firecrawl 不可用时报告阻塞，不把内置 web search 当作等价替代。
+- Keyless Firecrawl 不可用时继续走浏览器与电脑控制；三条路径都无法读取正文时报告缺口，不把 web-search 摘要当作等价证据。
 
 ## 状态、权限和边界情况
 
 | 情况 | 预期行为 |
 | --- | --- |
-| Firecrawl MCP 不可用 | 报告阻塞原因，停止研究。 |
+| Keyless Firecrawl 不可用 | 继续用浏览器与电脑控制；仅当仍无法读取公开正文时报告阻塞或覆盖缺口。 |
 | 平台登录墙、验证码、付费墙或反爬限制 | 不绕过；记录覆盖缺口。 |
 | 覆盖门槛未满足 | 停止评分、事实核验、审核清单和地图写入，只报告具体缺口。 |
 | 用户未批准地图写入 | 结束于审核清单。 |
@@ -96,9 +96,9 @@
 
 ## 验收标准
 
-- 触发语义、必需输入、Firecrawl 主路径、覆盖门槛和输出格式在 `SKILL.md` 中明确可见。
+- 触发语义、必需输入、Keyless/浏览器/电脑控制顺序、覆盖门槛和输出格式在 `SKILL.md` 中明确可见。
 - 多平台分层规则在 `references/scoring-rubric.md` 和评分脚本中一致。
-- 覆盖不足、平台限制、Firecrawl 不可用、未批准写入和匹配失败都有明确停止或报告路径。
+- 覆盖不足、平台限制、三条研究路径均不可用、未批准写入和匹配失败都有明确停止或报告路径。
 - 用户批准前不会写入 Google Maps。
 
 ## 待确认

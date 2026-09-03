@@ -2,7 +2,7 @@
 
 ## 文档目的
 
-定义 Firecrawl 多平台来源扩展后的自动化和人工验证方式，覆盖评分脚本、skill 文档、Firecrawl 流程边界和 Google Maps 写入审批。
+定义无 API Key 多平台研究后的自动化和人工验证方式，覆盖评分脚本、skill 文档、Keyless/浏览器/电脑控制边界和 Google Maps 写入审批。
 
 ## 适用范围
 
@@ -14,7 +14,7 @@
 | --- | --- |
 | `score_candidates.py` | 可用 unittest 覆盖离线评分逻辑。 |
 | `test_score_candidates.py` | 当前回归测试覆盖分层、过滤、去重、严重风险和平台门槛。 |
-| `SKILL.md` | Firecrawl 和 Google Maps 流程需要人工审阅。 |
+| `SKILL.md` | Keyless Firecrawl、浏览器/电脑控制和 Google Maps 流程需要人工审阅。 |
 | `AGENTS.md` | 修改 skill 后需要运行 quick validate。 |
 
 ## 自动化检查
@@ -46,15 +46,15 @@ python3 /Users/jerryszz/.codex/skills/.system/skill-creator/scripts/quick_valida
 
 ## 人工审阅
 
-- `SKILL.md` 明确优先使用 Firecrawl，不再要求 Chrome 小红书。
-- 每次处理 Firecrawl search 结果后需要调用 `firecrawl_search_feedback`。
+- `SKILL.md` 明确 Keyless Firecrawl 使用显式空 API Key，且不调用 Firecrawl MCP、启动器、环境变量或 Keychain。
+- `SKILL.md` 明确浏览器控制优先于电脑控制，二者均只读取公开页面且不绕过访问限制。
 - Google Maps 写入仍必须等用户批准。
 - 覆盖不足时仍只报告缺口，不输出伪完整清单。
 - 文档中不包含 API key、Cookie、token 或账号凭据。
 
 ## 未覆盖风险
 
-- Firecrawl 对各平台的真实抓取质量无法由本地 unittest 覆盖。
+- Keyless Firecrawl、浏览器和电脑控制对各平台的真实读取质量无法由本地 unittest 覆盖。
 - Google Maps UI 变化、列表写入失败和地点匹配歧义未由自动化测试覆盖。
 - 平台登录墙、验证码、付费墙或反爬限制需要真实任务中记录。
 
