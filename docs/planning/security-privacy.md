@@ -17,8 +17,9 @@
 ## 凭据处理
 
 - runner 不读取、打印或保存 DSH/Kimi 的凭据配置；它只调用用户已配置的 CLI profile。
-- 不执行 `--dump-config`，避免把用户覆盖层或敏感配置写入日志。
+- DSH runner 仅将 `--dump-config` 通过管道提取有效 `model` 字段；不保存、打印或写入完整配置。
 - DSH 的 reasoning stream 保存于指定 artifact 目录，可能包含任务上下文；该目录必须位于仓库外并按敏感工作产物处理。
+- receipt 只从 session 数据抽取模型、推理档位、token 和 session 路径，不复制 prompt、完整 wire 内容或凭据。
 
 ## 剩余风险
 

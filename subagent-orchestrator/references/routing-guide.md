@@ -59,3 +59,5 @@ If an interface is shared, stabilize it in the main thread before dispatching it
 - Move a failed task through the configured order: DeepSeek, Kimi, Luna, Terra, then main thread.
 - Permit at most one targeted retry on a route before moving to the next route.
 - Inspect actual diffs and command output. Do not accept a worker result from its prose summary alone.
+- Require the unified worker receipt from `worker-receipt.md`. Never substitute the requested model for the observed model or estimate unavailable tokens.
+- Reject a successful Kimi result when its actual model, reasoning tier, or usage cannot be recovered from runtime evidence.

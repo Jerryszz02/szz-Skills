@@ -246,6 +246,7 @@ subagent-orchestrator/scripts/run-kimi-worker.sh \
 - DeepSeek 与 Kimi worktree 只是 Git 冲突隔离，不是操作系统安全沙箱，不得传递 secrets、Cookie、私钥、`.env` 值或私密会话。
 - runner 不创建分支或 commit，也不自动应用 patch。主 Agent 必须检查 manifest、scope、实际 diff 和验证结果。
 - 如果允许路径存在主工作区未提交改动，外部 runner 会拒绝启动；无关脏文件不会阻止执行。
+- 每个 worker 都必须提供统一 `worker-receipt.json`/回执，记录任务、实际模型、推理档位、fork 范围、状态和 token。Kimi manifest 从本地 session runtime 读取真实模型与累计 usage；缺少这些证据时不会把请求模型冒充为实际模型。
 
 ## product-demand-discovery
 

@@ -53,6 +53,7 @@ Also state:
 - `fork_turns: "none"`; put all required context in the task packet instead of replaying parent history.
 - Read-only or workspace-write permission.
 - Expected response sections.
+- The unified receipt fields required by `worker-receipt.md`.
 - That the worker is not alone in the repository and must not revert unrelated changes.
 - That `spawn_agent`, nested agents, and every other form of worker delegation are forbidden. Only the root/main agent may dispatch workers.
 

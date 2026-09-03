@@ -13,6 +13,7 @@
 5. 原生 worker 显式设置模型和推理强度；scout 使用 low，builder 使用 medium；`fork_turns` 使用 `none`，完整上下文由 task packet 提供。
 6. 每份 task packet 都要求 `Nested delegation: forbidden`，禁止 worker 调用 `spawn_agent` 或继续委派。
 7. 主 Agent 审查输出、diff 和验证结果，负责集成与最终验收。
+8. 所有 worker 使用同一 receipt schema，记录任务、实际模型、推理档位、fork 范围、状态和 runtime token。
 
 ## 固定 fallback
 
@@ -33,6 +34,7 @@
 - 拒绝与主工作区允许路径上的未提交改动重叠；
 - 从当前 `HEAD` 创建 detached worktree；
 - 保存状态、changed paths、binary patch、退出码、scope 结果和 manifest；
+- 生成 `worker-receipt.json`；Kimi 从 session wire 提取实际响应模型、thinking effort 和逐步 usage，DSH 从有效 headless model 与 session totals 提取；
 - 不创建 branch/commit，不自动应用 patch，完成后清理 worktree。
 
 DeepSeek runner 额外保存 `final.txt` 和 `reasoning.log`；Kimi runner 保存 `events.jsonl` 和 `stderr.log`。
@@ -42,4 +44,5 @@ DeepSeek runner 额外保存 `final.txt` 和 `reasoning.log`；Kimi runner 保�
 - `quick_validate.py` 通过。
 - DSH 与 Kimi runner 单元测试通过。
 - task packet 对缺失或非 `forbidden` 的嵌套委派声明失败。
+- Kimi manifest 记录实际模型、推理档位和完整 usage；成功运行缺少任一项时以 metadata-incomplete 失败。
 - 文档不存在 Sol worker 路由，并明确原生模型、推理强度、并发位检查和 root-only spawn。

@@ -145,27 +145,70 @@ elif [[ "$worktree_cleaned" != true ]]; then
   runner_exit_code=74
 fi
 
-python3 - "$output_dir/manifest.json" "$repo_root" "$head_commit" "$model" \
-  "$kimi_exit_code" "$runner_exit_code" "$scope_ok" "$worktree_cleaned" "$worktree" <<'PY'
+worker_status="completed"
+if [[ "$kimi_exit_code" -ne 0 ]]; then
+  worker_status="failed"
+fi
+if [[ "$scope_ok" != true ]]; then
+  worker_status="scope-rejected"
+elif [[ "$worktree_cleaned" != true ]]; then
+  worker_status="cleanup-failed"
+fi
+
+kimi_session_index="${KIMI_SESSION_INDEX:-$(python3 -c 'from pathlib import Path; print(Path.home() / ".kimi-code/session_index.jsonl")')}"
+metadata_complete=true
+if ! python3 "$script_dir/worker_receipt.py" kimi \
+  --task-file "$task_file" \
+  --events-file "$output_dir/events.jsonl" \
+  --session-index "$kimi_session_index" \
+  --requested-model "$model" \
+  --status "$worker_status" \
+  --output "$output_dir/worker-receipt.json" \
+  --require-complete; then
+  metadata_complete=false
+  if [[ "$runner_exit_code" -eq 0 ]]; then
+    runner_exit_code=75
+    worker_status="metadata-incomplete"
+    python3 "$script_dir/worker_receipt.py" kimi \
+      --task-file "$task_file" \
+      --events-file "$output_dir/events.jsonl" \
+      --session-index "$kimi_session_index" \
+      --requested-model "$model" \
+      --status "$worker_status" \
+      --output "$output_dir/worker-receipt.json"
+  fi
+fi
+
+python3 - "$output_dir/manifest.json" "$output_dir/worker-receipt.json" "$repo_root" "$head_commit" \
+  "$kimi_exit_code" "$runner_exit_code" "$scope_ok" "$worktree_cleaned" "$worktree" "$metadata_complete" <<'PY'
 import json
 import sys
 
 (
     manifest_path,
+    receipt_path,
     repo_root,
     head_commit,
-    model,
     kimi_exit_code,
     runner_exit_code,
     scope_ok,
     worktree_cleaned,
     worktree_path,
+    metadata_complete,
 ) = sys.argv[1:]
+
+with open(receipt_path, encoding="utf-8") as handle:
+    receipt = json.load(handle)
 
 manifest = {
     "repo_root": repo_root,
     "head_commit": head_commit,
-    "model": model or None,
+    "requested_model": receipt["requested_model"],
+    "actual_model": receipt["actual_model"],
+    "actual_models": receipt["actual_models"],
+    "reasoning_effort": receipt["reasoning_effort"],
+    "usage": receipt["usage"],
+    "metadata_complete": metadata_complete == "true",
     "kimi_exit_code": int(kimi_exit_code),
     "runner_exit_code": int(runner_exit_code),
     "scope_ok": scope_ok == "true",
@@ -179,6 +222,7 @@ manifest = {
         "changes.patch",
         "exit-code",
         "scope-check.txt",
+        "worker-receipt.json",
     ],
 }
 

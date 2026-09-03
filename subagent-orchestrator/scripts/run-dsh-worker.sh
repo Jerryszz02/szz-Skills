@@ -46,6 +46,14 @@ if ! "$dsh_bin" --profile headless --help >/dev/null 2>&1; then
   echo "DeepSeek Harness headless profile preflight failed." >&2
   exit 69
 fi
+if ! configured_model="$("$dsh_bin" --profile headless --dump-config 2>/dev/null | awk '$1 == "model:" && !found {print $2; found=1}')"; then
+  echo "DeepSeek Harness could not read the effective headless model." >&2
+  exit 69
+fi
+if [[ -z "$configured_model" ]]; then
+  echo "DeepSeek Harness headless profile has no observable model." >&2
+  exit 69
+fi
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 python3 "$script_dir/task_packet.py" validate --task-file "$task_file"
@@ -94,6 +102,7 @@ trap retain_on_failure EXIT
 git -C "$repo_root" worktree add --detach "$worktree" HEAD >/dev/null
 worktree_registered=1
 head_commit="$(git -C "$worktree" rev-parse HEAD)"
+run_id="$(python3 -c 'import uuid; print(uuid.uuid4())')"
 
 prompt="$(cat <<'PROMPT'
 You are a bounded implementation worker controlled by a root/main agent.
@@ -104,7 +113,7 @@ Do not read, request, print, or store secrets. Run the required verification and
 inspect your diff. Finish with status, files changed, implementation summary,
 verification results, and blockers.
 PROMPT
-)"$'\n\n'"$(<"$task_file")"
+)"$'\n'"Worker receipt run id: ${run_id}"$'\n\n'"$(<"$task_file")"
 
 set +e
 (
@@ -146,13 +155,48 @@ elif [[ "$worktree_cleaned" != true ]]; then
   runner_exit_code=74
 fi
 
-python3 - "$output_dir/manifest.json" "$repo_root" "$head_commit" \
-  "$dsh_exit_code" "$runner_exit_code" "$scope_ok" "$worktree_cleaned" "$worktree" <<'PY'
+worker_status="completed"
+if [[ "$dsh_exit_code" -ne 0 ]]; then
+  worker_status="failed"
+fi
+if [[ "$scope_ok" != true ]]; then
+  worker_status="scope-rejected"
+elif [[ "$worktree_cleaned" != true ]]; then
+  worker_status="cleanup-failed"
+fi
+
+dsh_session_root="${DSH_SESSION_ROOT:-$(python3 -c 'from pathlib import Path; print(Path.home() / ".dsh/storages/session_projcache/sessions")')}"
+metadata_complete=true
+if ! python3 "$script_dir/worker_receipt.py" dsh \
+  --task-file "$task_file" \
+  --session-root "$dsh_session_root" \
+  --run-id "$run_id" \
+  --configured-model "$configured_model" \
+  --status "$worker_status" \
+  --output "$output_dir/worker-receipt.json" \
+  --require-complete; then
+  metadata_complete=false
+  if [[ "$runner_exit_code" -eq 0 ]]; then
+    runner_exit_code=75
+    worker_status="metadata-incomplete"
+    python3 "$script_dir/worker_receipt.py" dsh \
+      --task-file "$task_file" \
+      --session-root "$dsh_session_root" \
+      --run-id "$run_id" \
+      --configured-model "$configured_model" \
+      --status "$worker_status" \
+      --output "$output_dir/worker-receipt.json"
+  fi
+fi
+
+python3 - "$output_dir/manifest.json" "$output_dir/worker-receipt.json" "$repo_root" "$head_commit" \
+  "$dsh_exit_code" "$runner_exit_code" "$scope_ok" "$worktree_cleaned" "$worktree" "$metadata_complete" <<'PY'
 import json
 import sys
 
 (
     manifest_path,
+    receipt_path,
     repo_root,
     head_commit,
     dsh_exit_code,
@@ -160,13 +204,23 @@ import sys
     scope_ok,
     worktree_cleaned,
     worktree_path,
+    metadata_complete,
 ) = sys.argv[1:]
+
+with open(receipt_path, encoding="utf-8") as handle:
+    receipt = json.load(handle)
 
 manifest = {
     "worker": "deepseek-harness",
     "profile": "headless",
     "repo_root": repo_root,
     "head_commit": head_commit,
+    "requested_model": receipt["requested_model"],
+    "actual_model": receipt["actual_model"],
+    "actual_models": receipt["actual_models"],
+    "reasoning_effort": receipt["reasoning_effort"],
+    "usage": receipt["usage"],
+    "metadata_complete": metadata_complete == "true",
     "dsh_exit_code": int(dsh_exit_code),
     "runner_exit_code": int(runner_exit_code),
     "scope_ok": scope_ok == "true",
@@ -180,6 +234,7 @@ manifest = {
         "changes.patch",
         "exit-code",
         "scope-check.txt",
+        "worker-receipt.json",
     ],
 }
 

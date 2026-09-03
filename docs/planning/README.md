@@ -26,7 +26,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| `technical-design.md` | 固化委派闸门、fallback、并发检查、task packet 和 runner 契约。 |
+| `technical-design.md` | 固化委派闸门、fallback、并发检查、task packet、worker receipt 和 runner 契约。 |
 | `security-privacy.md` | 记录外部进程、secrets、worktree 和主 Agent 审查边界。 |
 | `test-plan.md` | 记录 skill 校验、runner 单元测试和 live profile 探针。 |
 

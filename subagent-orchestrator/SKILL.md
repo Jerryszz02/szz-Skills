@@ -18,7 +18,7 @@ Before every intended `spawn_agent` call, and before substantial work that may b
 5. Record the routing choice and the reason. Do not start workers merely because this skill triggered.
 6. Immediately before a native spawn, call `list_agents`, derive the remaining native concurrency slots from the active runtime limit, and do not call `spawn_agent` when no slot remains.
 
-Read `references/routing-guide.md` before choosing a worker. Read `references/task-packet.md` before constructing any delegated task.
+Read `references/routing-guide.md` before choosing a worker. Read `references/task-packet.md` before constructing any delegated task. Read `references/worker-receipt.md` before dispatch so every route returns the same audit fields.
 
 ## Roles
 
@@ -38,9 +38,10 @@ The required fallback order is DeepSeek, Kimi, Luna, then Terra. Do not skip an 
 4. Try the worker routes in order: DeepSeek, Kimi, Luna, Terra. A route is unavailable only when its executable/tool/model is absent, its required preflight fails, or the task violates that route's safety boundary.
 5. Before every native spawn, confirm this is the root agent, call `list_agents`, calculate remaining native slots, and stop or queue the task when none remain. Call `spawn_agent` with explicit `model`, explicit `reasoning_effort`, and `fork_turns: "none"`; include the full task packet in `message`.
 6. Dispatch dependent tasks sequentially. Run workers concurrently only for disjoint, dependency-free slices with independent acceptance.
-7. Review actual worker evidence. For DeepSeek or Kimi, inspect `manifest.json`, `status.txt`, `scope-check.txt`, and `changes.patch`; then run `git apply --check` before accepting the patch.
-8. Retry a failed task at most once with the exact failed criterion. Then continue to the next fallback route or retain it in the main thread and report the fallback.
-9. Run deterministic verification against the integrated workspace. The main agent owns the final answer.
+7. Require a worker receipt containing the task objective, actual model, reasoning tier, fork range, status, and runtime token usage. External runners write `worker-receipt.json`; the main agent records the same schema for native workers.
+8. Review actual worker evidence. For DeepSeek or Kimi, inspect `worker-receipt.json`, `manifest.json`, `status.txt`, `scope-check.txt`, and `changes.patch`; then run `git apply --check` before accepting the patch. Kimi is not acceptable when its actual model, reasoning tier, or usage metadata is incomplete.
+9. Retry a failed task at most once with the exact failed criterion. Then continue to the next fallback route or retain it in the main thread and report the fallback.
+10. Run deterministic verification against the integrated workspace. The main agent owns the final answer.
 
 ## External Worker Boundary
 

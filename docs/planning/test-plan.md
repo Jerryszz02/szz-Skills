@@ -10,7 +10,7 @@ python3 /Users/jerryszz/.codex/skills/.system/skill-creator/scripts/quick_valida
 
 ```bash
 cd /Users/jerryszz/Desktop/Projects/szzSkills/subagent-orchestrator/scripts
-python3 -m unittest test_dsh_runner.py test_kimi_runner.py
+python3 -m unittest test_dsh_runner.py test_kimi_runner.py test_worker_receipt.py
 ```
 
 ## 覆盖场景
@@ -21,6 +21,8 @@ python3 -m unittest test_dsh_runner.py test_kimi_runner.py
 - 超出允许路径的修改被 scope check 拒绝。
 - 允许路径存在未提交主工作区改动时拒绝 dispatch。
 - task packet 拒绝无界允许路径，并要求 `Nested delegation: forbidden`。
+- 统一 receipt 记录任务、实际模型、推理档位、fork 范围、状态和 token。
+- Kimi manifest 使用 runtime 观察到的模型、推理档位与 usage；成功执行但缺少 metadata 时返回 75。
 
 ## Live 探针
 
