@@ -1,4 +1,0 @@
-interface:
-  display_name: "Non-GPT Subagent Worker"
-  short_description: "用非 OpenAI 模型运行外部 worker"
-  default_prompt: "使用 $non-gpt-subagent-worker 把适合委派的子任务交给 Ollama、LM Studio 或 DeepSeek worker 执行。"

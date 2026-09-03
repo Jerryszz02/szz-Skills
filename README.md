@@ -10,7 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制收集多平台旅行证据，生成中文审核清单，并在批准后保存到 Google Maps | “去哪里旅游”“做个旅游计划”“看一下哪里的景点/餐厅”“加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
-| `non-gpt-subagent-worker` | 可用 | 当用户要求 subagent/worker 使用 Ollama、LM Studio 或 DeepSeek 等非 OpenAI 模型时，用脚本启动外部 worker 并汇总结果 | “开 sub-agent 用本地模型”“用 LM Studio worker 并行查代码”“用 DeepSeek 做子任务” |
+| `subagent-orchestrator` | 可用 | 在每次原生 `spawn_agent` 前执行委派闸门，并按 DeepSeek、Kimi、Luna、Terra 顺序路由有界任务 | “拆分这个复杂任务”“调用 subagent 前先评估”“用 DeepSeek worker 实现” |
 
 ## How This Repository Works
 
@@ -205,49 +205,48 @@ python3 -m unittest test_score_candidates.py
 - 不修改产品代码、测试、配置、依赖清单、部署文件、`.env` 或 secrets。
 - 如果已有同类 planning 文档，会优先更新索引或合并信息，不重复生成一套。
 
-## non-gpt-subagent-worker
+## subagent-orchestrator
 
-路径：`non-gpt-subagent-worker/`
+路径：`subagent-orchestrator/`
 
 ### 功能
 
-`non-gpt-subagent-worker` 用于把非 OpenAI 模型作为外部 worker 参与 Codex 工作流。当用户同时提到“开 sub-agent / subagent / worker / 并行委派”和“Ollama / LM Studio / DeepSeek / 本地模型 / 非 OpenAI 模型 / 便宜模型”时触发。
+`subagent-orchestrator` 是所有原生 `spawn_agent` 调用前的委派闸门。它先判断任务是否真的适合委派，再按固定顺序尝试 worker：
 
-它不会声称能把 Codex 原生 subagent 切换到非 OpenAI provider。实际方式是通过脚本调用：
+- DeepSeek：通过已配置的 `dsh --profile headless`，在 detached Git worktree 中执行。
+- Kimi Code：DeepSeek 不可用或失败时的第二选择，同样在 detached worktree 中执行。
+- Luna：外部 worker 都不能使用时的首个原生选择；显式指定模型和推理强度。
+- Terra：最后一个 worker 回退；显式指定模型和推理强度。
 
-- Ollama：`codex exec --oss --local-provider ollama`
-- LM Studio：`codex exec --oss --local-provider lmstudio`
-- DeepSeek：使用 `DEEPSEEK_API_KEY` 调用 DeepSeek OpenAI-compatible chat endpoint
+不会使用 Sol worker。只有根/主 Agent 可以调用 `spawn_agent`；每份 task packet 都明确禁止 worker 再委派。原生 spawn 前必须检查当前剩余并发位，且调用中必须填写 `model`、`reasoning_effort` 和 `fork_turns: "none"`。
 
 ### 怎么用
 
-单个 worker：
+DeepSeek worker：
 
 ```bash
-non-gpt-subagent-worker/scripts/run-worker.sh \
-  --provider lmstudio \
-  --model zai-org_glm-4.5-air \
+subagent-orchestrator/scripts/run-dsh-worker.sh \
   --cwd /Users/jerryszz/Desktop/Projects/example \
-  --sandbox workspace-write \
   --task-file /tmp/worker-task.md \
-  --output /tmp/worker-result.md
+  --output-dir /tmp/deepseek-worker-artifacts
 ```
 
-多个 worker：
+Kimi fallback：
 
 ```bash
-non-gpt-subagent-worker/scripts/run-parallel-workers.sh \
-  --tasks /tmp/non-gpt-worker-tasks.json \
-  --output-dir /tmp/non-gpt-worker-results \
-  --max-parallel 3
+subagent-orchestrator/scripts/run-kimi-worker.sh \
+  --cwd /Users/jerryszz/Desktop/Projects/example \
+  --task-file /tmp/worker-task.md \
+  --output-dir /tmp/kimi-worker-artifacts
 ```
 
 ### 边界
 
-- 默认 sandbox 是 `workspace-write`，但脚本只允许 `read-only` 和 `workspace-write`，不会使用 `danger-full-access`。
-- DeepSeek API key 必须来自环境变量 `DEEPSEEK_API_KEY`，不得写入任务 prompt、日志、仓库文件或回复。
-- DeepSeek 直接 API 路径是文本 worker，不具备 Codex 工具或自动读仓库能力；需要主 agent 提供必要上下文。
-- 主 agent 必须审查 worker 输出；worker 改过文件时，需要检查 diff 并运行最小验证。
+- 委派必须是有界、独立、可验证的；架构、安全、认证、支付、迁移、破坏性操作、集成和最终验收留在主 Agent。
+- DeepSeek 与 Kimi worktree 只是 Git 冲突隔离，不是操作系统安全沙箱，不得传递 secrets、Cookie、私钥、`.env` 值或私密会话。
+- runner 不创建分支或 commit，也不自动应用 patch。主 Agent 必须检查 manifest、scope、实际 diff 和验证结果。
+- 如果允许路径存在主工作区未提交改动，外部 runner 会拒绝启动；无关脏文件不会阻止执行。
+- 每个 worker 都必须提供统一 `worker-receipt.json`/回执，记录任务、实际模型、推理档位、fork 范围、状态和 token。Kimi manifest 从本地 session runtime 读取真实模型与累计 usage；缺少这些证据时不会把请求模型冒充为实际模型。
 
 ## product-demand-discovery
 
@@ -330,7 +329,7 @@ Markdown 报告应包含：
 │   ├── SKILL.md
 │   ├── agents/
 │   └── references/
-├── non-gpt-subagent-worker/
+├── subagent-orchestrator/
 │   ├── SKILL.md
 │   ├── agents/
 │   ├── references/
@@ -357,7 +356,7 @@ macOS / Linux:
 mkdir -p ~/.codex/skills
 rsync -a --delete --exclude .DS_Store ./article-summary/ ~/.codex/skills/article-summary/
 rsync -a --delete --exclude .DS_Store ./plan-project-docs/ ~/.codex/skills/plan-project-docs/
-rsync -a --delete --exclude .DS_Store ./non-gpt-subagent-worker/ ~/.codex/skills/non-gpt-subagent-worker/
+rsync -a --delete --exclude .DS_Store ./subagent-orchestrator/ ~/.codex/skills/subagent-orchestrator/
 rsync -a --delete --exclude .DS_Store ./product-demand-discovery/ ~/.codex/skills/product-demand-discovery/
 rsync -a --delete --exclude .DS_Store ./travel-research-maps/ ~/.codex/skills/travel-research-maps/
 ```
@@ -368,7 +367,7 @@ Windows PowerShell:
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills" | Out-Null
 Copy-Item -Recurse .\article-summary "$env:USERPROFILE\.codex\skills\article-summary"
 Copy-Item -Recurse .\plan-project-docs "$env:USERPROFILE\.codex\skills\plan-project-docs"
-Copy-Item -Recurse .\non-gpt-subagent-worker "$env:USERPROFILE\.codex\skills\non-gpt-subagent-worker"
+Copy-Item -Recurse .\subagent-orchestrator "$env:USERPROFILE\.codex\skills\subagent-orchestrator"
 Copy-Item -Recurse .\product-demand-discovery "$env:USERPROFILE\.codex\skills\product-demand-discovery"
 Copy-Item -Recurse .\travel-research-maps "$env:USERPROFILE\.codex\skills\travel-research-maps"
 ```
