@@ -110,7 +110,12 @@ def matches(path: str, pattern: str) -> bool:
         return path == prefix or path.startswith(prefix + "/")
     if pattern.endswith("/"):
         return path.startswith(pattern)
-    return fnmatch.fnmatchcase(path, pattern)
+    path_parts = path.split("/")
+    pattern_parts = pattern.split("/")
+    return len(path_parts) == len(pattern_parts) and all(
+        fnmatch.fnmatchcase(path_part, pattern_part)
+        for path_part, pattern_part in zip(path_parts, pattern_parts)
+    )
 
 
 def scope_errors(paths: list[str], allowed: list[str], forbidden: list[str]) -> list[str]:

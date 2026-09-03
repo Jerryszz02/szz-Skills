@@ -125,8 +125,8 @@ set -e
 
 git -C "$worktree" add -N -- . >/dev/null
 git -C "$worktree" status --short > "$output_dir/status.txt"
-git -C "$worktree" diff --name-only --no-ext-diff | awk 'NF' | sort -u > "$output_dir/changed-paths.txt"
-git -C "$worktree" diff --binary --no-ext-diff > "$output_dir/changes.patch"
+git -C "$worktree" diff --name-only --no-ext-diff "$head_commit" -- | awk 'NF' | sort -u > "$output_dir/changed-paths.txt"
+git -C "$worktree" diff --binary --no-ext-diff "$head_commit" -- > "$output_dir/changes.patch"
 printf '%s\n' "$dsh_exit_code" > "$output_dir/exit-code"
 
 scope_ok=true
