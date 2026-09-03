@@ -7,7 +7,7 @@
 | Skill | 状态 | 主要用途 | 典型触发 |
 | --- | --- | --- | --- |
 | `article-summary` | 可用 | 按原文顺序总结文章、网页、PDF、Word 文档或纯文本，并标注来源位置 | “总结一下这篇文章”“这个链接讲了什么”“帮我概括这个 PDF” |
-| `travel-research-maps` | 可用 | 用 Firecrawl 多平台旅行证据筛选景点和餐厅，生成中文审核清单，并在批准后保存到 Google Maps | “去哪里旅游”“做个旅游计划”“看一下哪里的景点/餐厅”“加入地图列表” |
+| `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制收集多平台旅行证据，生成中文审核清单，并在批准后保存到 Google Maps | “去哪里旅游”“做个旅游计划”“看一下哪里的景点/餐厅”“加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
 | `non-gpt-subagent-worker` | 可用 | 当用户要求 subagent/worker 使用 Ollama、LM Studio 或 DeepSeek 等非 OpenAI 模型时，用脚本启动外部 worker 并汇总结果 | “开 sub-agent 用本地模型”“用 LM Studio worker 并行查代码”“用 DeepSeek 做子任务” |
@@ -85,7 +85,7 @@
 它的完整流程包括：
 
 - 从请求中提取目的地和旅行日期；未提供日期时标记为“计划前往日期未知”。
-- 使用 Firecrawl MCP 作为主研究路径，收集研究日前 365 天内公开可访问的旅行内容。
+- 优先使用无需 API Key 的 Firecrawl Keyless；再用浏览器控制与电脑控制读取公开旅行内容，不使用 Firecrawl MCP。
 - 中国大陆目的地优先小红书和 Bilibili；境外目的地优先小红书、YouTube、Instagram 和公开旅行内容。
 - 分别满足覆盖门槛后再评分：景点至少浏览 10 篇相关内容并形成 10 个不同候选；餐厅至少浏览 10 篇相关内容并形成 5 个不同候选。
 - 排除广告、赞助、探店邀约、优惠码、返佣链接、店方账号和官方旅游机构账号。
@@ -125,7 +125,7 @@
 
 ### 边界
 
-- Firecrawl MCP 不可用时会报告阻塞原因，不把普通 web search 当作等价替代。
+- Firecrawl Keyless 配额不足或不可用时，继续使用浏览器和电脑控制；三条路径都无法取得公开正文时报告覆盖缺口，不把普通 web-search 摘要当作等价证据。
 - Google Maps 评论不直接计入推荐分，只用于地址、营业状态、地点匹配和风险核验。
 - 地图写入是外部副作用，必须先拿到用户对审核清单和目标列表的明确批准。
 - 不读取 Cookie、密码或浏览器会话数据；如果用户未登录 Google Maps，只保留审核清单并说明阻塞。

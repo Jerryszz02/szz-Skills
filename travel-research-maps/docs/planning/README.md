@@ -2,11 +2,11 @@
 
 ## 文档目的
 
-记录 `travel-research-maps` Firecrawl 多平台来源扩展后的产品、技术、安全和验证指导。
+记录 `travel-research-maps` 的 Keyless Firecrawl、浏览器和电脑控制多平台研究流程，以及产品、技术、安全和验证指导。
 
 ## 更新时间
 
-2026-06-29
+2026-07-13
 
 ## 已检查的项目根目录
 
@@ -16,7 +16,7 @@
 
 | 证据 | 用途 |
 | --- | --- |
-| `SKILL.md` | 触发条件、Firecrawl 主工作流、覆盖门槛、审核清单和 Google Maps 写入边界。 |
+| `SKILL.md` | 触发条件、Keyless Firecrawl/浏览器/电脑控制工作流、覆盖门槛、审核清单和 Google Maps 写入边界。 |
 | `references/scoring-rubric.md` | 多平台证据、推荐档位、营销排除、分层和事实核验规则。 |
 | `scripts/score_candidates.py` | 离线评分、去重、日期过滤、平台门槛和 JSON 输入输出。 |
 | `scripts/test_score_candidates.py` | 评分器回归测试场景。 |
@@ -26,14 +26,14 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| `project-brief.md` | 说明 Firecrawl 来源扩展的目标、边界和成功标准。 |
+| `project-brief.md` | 说明无 API Key 研究路径的目标、边界和成功标准。 |
 | `prd.md` | 定义新版用户可见行为和验收标准。 |
-| `architecture.md` | 说明 Firecrawl、评分器、事实核验和 Google Maps 写入的数据流。 |
+| `architecture.md` | 说明 Keyless Firecrawl、浏览器/电脑控制、评分器、事实核验和 Google Maps 写入的数据流。 |
 | `technical-design.md` | 记录评分器平台门槛和实现维护指引。 |
 | `security-privacy.md` | 记录外部抓取、平台限制、凭据和地图写入的安全边界。 |
 | `user-flow.md` | 描述研究、评分、审核和批准后保存流程。 |
 | `test-plan.md` | 定义自动化和人工验证方式。 |
-| `decision-log.md` | 保留 Firecrawl、多平台、Google Maps 核验等关键决策。 |
+| `decision-log.md` | 保留无 API Key 研究、多平台、Google Maps 核验等关键决策。 |
 
 ## 已跳过文档
 
@@ -46,5 +46,5 @@
 
 ## 待确认
 
-- Firecrawl 对小红书、Bilibili、Instagram、X 等平台的公开页面抓取质量会随平台限制变化，需要实际任务中记录覆盖缺口。
+- Keyless Firecrawl 与浏览器/电脑控制对小红书、Bilibili、Instagram、X 等平台的公开页面读取质量会随平台限制变化，需要实际任务中记录覆盖缺口。
 - Google Maps 保存仍依赖用户已登录的浏览器会话，列表创建细节需在实际 UI 中确认。

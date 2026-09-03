@@ -2,7 +2,7 @@
 
 ## 文档目的
 
-把 Firecrawl 来源扩展计划转换为具体实现与维护指引，尤其覆盖评分器输入输出、平台门槛、去重逻辑、错误处理和兼容性约束。
+把 Keyless Firecrawl、浏览器和电脑控制研究流程转换为具体实现与维护指引，尤其覆盖评分器输入输出、平台门槛、去重逻辑、错误处理和兼容性约束。
 
 ## 适用范围
 
@@ -21,9 +21,9 @@
 
 ## 选定方案
 
-采用“Firecrawl 收集公开证据，评分脚本确定性评分，Google Maps 做核验和批准后保存”的分层方案：
+采用“Keyless Firecrawl 发现公开内容，浏览器/电脑控制读取和核验，评分脚本确定性评分，Google Maps 批准后保存”的分层方案：
 
-- `SKILL.md` 负责人机流程、Firecrawl 工具顺序、覆盖门槛、事实核验和 Google Maps 写入批准。
+- `SKILL.md` 负责人机流程、无 API Key 研究顺序、覆盖门槛、事实核验和 Google Maps 写入批准。
 - `references/scoring-rubric.md` 负责解释多平台证据、营销排除、平台门槛和审计口径。
 - `scripts/score_candidates.py` 只负责对已整理好的候选证据做离线评分。
 

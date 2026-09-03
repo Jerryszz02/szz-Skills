@@ -1,6 +1,6 @@
 ---
 name: travel-research-maps
-description: Research travel destinations with Firecrawl-backed multi-platform social and travel evidence, score worthwhile attractions and restaurants, and prepare auditable Chinese venue lists without day-by-day itineraries; only after explicit approval, save uniquely matched places into a chosen Google Maps list. Automatically use when the user asks to travel somewhere, make a travel plan, see a place's tourist attractions, find travel food recommendations, or curate travel places into Google Maps, including Chinese requests such as “去哪里旅游”“做个旅游计划”“看一下哪里的旅游景点”.
+description: Research travel destinations with keyless Firecrawl, browser, and computer-controlled public-web evidence; score worthwhile attractions and restaurants, and prepare auditable Chinese venue lists without day-by-day itineraries; only after explicit approval, save uniquely matched places into a chosen Google Maps list. Automatically use when the user asks to travel somewhere, make a travel plan, see a place's tourist attractions, find travel food recommendations, or curate travel places into Google Maps, including Chinese requests such as “去哪里旅游”“做个旅游计划”“看一下哪里的旅游景点”.
 ---
 
 # 旅行研究与地图收藏
@@ -16,9 +16,11 @@ description: Research travel destinations with Firecrawl-backed multi-platform s
 ## 工作流
 
 1. 阅读 `references/scoring-rubric.md`，按其规则收集和标注证据。
-2. 使用 Firecrawl MCP 作为主研究路径，收集研究日向前 365 天内公开可访问的旅行内容。优先使用 `mcp__firecrawl.firecrawl_search` 发现候选 URL，再对有价值页面使用 `mcp__firecrawl.firecrawl_scrape` 或 `mcp__firecrawl.firecrawl_extract` 抽取正文和结构化证据；当站内 URL 难定位时，少量使用 `mcp__firecrawl.firecrawl_map`；只有搜索、抓取和 map 都无法完成复杂跨站研究时，才将 `mcp__firecrawl.firecrawl_agent` 作为最后 fallback。
-   - 每次使用 `mcp__firecrawl.firecrawl_search` 并处理结果后，立即调用 `mcp__firecrawl.firecrawl_search_feedback`，标注有价值来源或缺失内容。
-   - 若 Firecrawl MCP 不可用，报告阻塞原因；不得把内置 web search 当作等价替代。
+2. 按以下顺序收集研究日向前 365 天内公开可访问的旅行内容：
+   - **Firecrawl Keyless**：优先使用不需要 API Key 的 Firecrawl 公开服务。若运行环境提供 Firecrawl SDK，必须显式以 `new Firecrawl({ apiKey: "" })` 初始化，避免 SDK 读取环境变量；不得调用任何 `mcp__firecrawl.*` 工具、`firecrawl-mcp` 启动器、Keychain 或要求用户提供 Firecrawl Key。
+   - **浏览器控制**：对 Keyless 搜索得到的候选、Keyless 不支持的页面和事实核验页面，使用浏览器控制打开公开页面或搜索引擎，读取可见正文并记录证据。不要读取 Cookie、密码、本地存储、浏览历史或无关标签页。
+   - **电脑控制**：仅当浏览器控制不能读取页面状态或不能完成必要的公开页面操作时，使用电脑控制操作浏览器；每次操作后重新读取当前页面状态。它是交互兜底，不得用于绕过登录墙、验证码、付费墙、地区限制或反爬机制。
+   - Keyless 配额不足、限流或不可用时继续走浏览器/电脑控制；三条路径都无法取得公开可核验证据时，报告具体覆盖缺口。不得把内置 web search 的摘要当作等价证据。
    - 中国大陆目的地以小红书和 Bilibili 为主，其他社交或旅行来源作为补充；港澳台或跨境目的地按实际可访问平台混合处理。
    - 中国大陆之外目的地以小红书、YouTube、Instagram 和公开旅行内容为主；Bilibili、X 和其他平台作为补充。Google Maps 只用于地址、营业状态、关闭风险和地点匹配核验。
    - 不绕过登录墙、验证码、付费墙、地区限制或反爬机制；不可公开抓取、缺日期、缺作者或缺明确推荐立场的内容不得计分，只记录覆盖缺口。
@@ -32,7 +34,7 @@ description: Research travel destinations with Firecrawl-backed multi-platform s
    python scripts/score_candidates.py --input evidence.json --output scored.json --as-of YYYY-MM-DD --min-positive-platforms-for-priority 2
    ```
 
-   在当前日期不等于出行日期时，`--as-of` 使用研究当天日期。脚本只做去重、计分和分层；Firecrawl 研究、Google Maps 核验和事实核验由本工作流完成。
+   在当前日期不等于出行日期时，`--as-of` 使用研究当天日期。脚本只做去重、计分和分层；Keyless Firecrawl、浏览器/电脑控制研究、Google Maps 核验和事实核验由本工作流完成。
 5. 对“优先去”和“备选”地点核验事实。门票、预约、营业/闭馆信息优先使用官方来源；官网缺失时才使用预约平台、场馆官方社媒、Google 商家页或近期旅行平台，并标记为“非官方核验”。Google Maps 评论不直接计入推荐分，但可产生 `hard_risks`，例如永久关闭、地点不匹配或多来源一致的重大服务问题。
 6. 先输出审核清单，禁止在此阶段写入 Google Maps。只输出“景点”和“餐厅”两组地点，不提供按天、按时段或路线式行程。每项使用以下固定格式：
 
@@ -44,7 +46,7 @@ description: Research travel destinations with Firecrawl-backed multi-platform s
 
    按评分层级排序，但不要另行生成“第几天去哪里”的建议。对无有效社媒或旅行证据的地点标为“待确认”，不得因评分不足暗示其不值得前往。
 7. 明确请求人工批准。默认全选“优先去”，用户可回复“加入全部，排除 A、B；使用列表 X”或要求新建“目的地·日期”列表。未得到批准时，结束于地点审核清单。
-8. 获得批准后，使用已登录的 Google Maps 浏览器会话。对每项搜索“名称 + 目的地”，核验名称和地址/城市一致后保存到用户指定或新建的列表。结果不唯一、关闭或无法匹配时不保存，并报告原因。
+8. 获得批准后，优先使用已登录的 Google Maps 浏览器会话；浏览器控制不可用时才用电脑控制。对每项搜索“名称 + 目的地”，核验名称和地址/城市一致后保存到用户指定或新建的列表。结果不唯一、关闭或无法匹配时不保存，并报告原因。
 9. 核对列表内已保存的数量，报告已保存、跳过、待确认项目。保留该列表页面作为交付页。
 
 ## 审核与安全边界
@@ -54,6 +56,7 @@ description: Research travel destinations with Firecrawl-backed multi-platform s
 - 出现永久关闭、食品安全、地点不匹配或多来源一致的重大服务问题时，标为排除，不进入默认地图写入范围。
 - Google Maps 写入是外部副作用：仅在用户明确批准审核清单及目标列表后执行。不要读取 Cookie、密码或其他浏览器会话数据。
 - 无法使用 Google Maps 或用户未登录时，保留审核清单并说明阻塞原因；不要尝试替代账号或上传私人数据。
+- Firecrawl Keyless 只能使用明确的空 API Key；不得回退到 API Key、MCP 启动器、环境变量或 Keychain。
 
 ## 资源
 
