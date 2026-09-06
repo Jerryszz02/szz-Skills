@@ -1,6 +1,6 @@
 # szz-Skills
 
-这个仓库用于保存和同步个人 Codex skills。每个顶层目录对应一个可复制到 `~/.codex/skills/<skill-name>/` 的 skill。
+这个仓库用于保存和同步个人 Codex skills。每个顶层目录对应一个可复制到 `~/.agents/skills/<skill-name>/` 的 skill。
 
 ## Skill 速览
 
@@ -20,7 +20,7 @@
 
 1. 在对应 skill 目录里修改 `SKILL.md`、`references/`、`scripts/` 或 `agents/openai.yaml`。
 2. 用 `quick_validate.py` 校验被修改的 skill 目录。
-3. 把通过校验的目录复制或同步到 `~/.codex/skills/<skill-name>/`。
+3. 运行 `scripts/sync-installed-skills.sh`，把仓库中的 skill 同步到 `~/.agents/skills/`。
 4. 重启 Codex，让 skill registry 重新加载本地目录。
 
 本仓库中的文件按职责分工：
@@ -34,7 +34,7 @@
 | `<skill-name>/scripts/` | 放确定性辅助脚本和对应测试；只有需要代码辅助时才存在。 |
 | `<skill-name>/agents/openai.yaml` | Codex UI 展示元数据；`interface.default_prompt` 应明确提到 `$skill-name`。 |
 
-没有在仓库中发现统一的包管理清单、构建系统、发布流水线或自动安装脚本；这些维护入口目前都以本 README、`AGENTS.md` 和逐目录复制命令为准。
+同步脚本只处理仓库中已有的顶层 skill，不会把安装目录中的其它 skill 反向加入仓库；可通过第一个参数指定其它安装根目录。
 
 ## article-summary
 
@@ -353,29 +353,24 @@ Markdown 报告应包含：
 macOS / Linux:
 
 ```bash
-mkdir -p ~/.codex/skills
-rsync -a --delete --exclude .DS_Store ./article-summary/ ~/.codex/skills/article-summary/
-rsync -a --delete --exclude .DS_Store ./plan-project-docs/ ~/.codex/skills/plan-project-docs/
-rsync -a --delete --exclude .DS_Store ./subagent-orchestrator/ ~/.codex/skills/subagent-orchestrator/
-rsync -a --delete --exclude .DS_Store ./product-demand-discovery/ ~/.codex/skills/product-demand-discovery/
-rsync -a --delete --exclude .DS_Store ./travel-research-maps/ ~/.codex/skills/travel-research-maps/
+./scripts/sync-installed-skills.sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills" | Out-Null
-Copy-Item -Recurse .\article-summary "$env:USERPROFILE\.codex\skills\article-summary"
-Copy-Item -Recurse .\plan-project-docs "$env:USERPROFILE\.codex\skills\plan-project-docs"
-Copy-Item -Recurse .\subagent-orchestrator "$env:USERPROFILE\.codex\skills\subagent-orchestrator"
-Copy-Item -Recurse .\product-demand-discovery "$env:USERPROFILE\.codex\skills\product-demand-discovery"
-Copy-Item -Recurse .\travel-research-maps "$env:USERPROFILE\.codex\skills\travel-research-maps"
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.agents\skills" | Out-Null
+Copy-Item -Recurse -Force .\article-summary "$env:USERPROFILE\.agents\skills\article-summary"
+Copy-Item -Recurse -Force .\plan-project-docs "$env:USERPROFILE\.agents\skills\plan-project-docs"
+Copy-Item -Recurse -Force .\subagent-orchestrator "$env:USERPROFILE\.agents\skills\subagent-orchestrator"
+Copy-Item -Recurse -Force .\product-demand-discovery "$env:USERPROFILE\.agents\skills\product-demand-discovery"
+Copy-Item -Recurse -Force .\travel-research-maps "$env:USERPROFILE\.agents\skills\travel-research-maps"
 ```
 
-这些命令会让目标目录与仓库版本一致，并删除目标目录里仓库不存在的旧文件。安装或更新后重启 Codex，让 skill 注册表重新加载。同步单个 skill 时使用同一模式：
+这些命令会让目标目录与仓库版本一致，并删除目标目录里仓库不存在的旧文件。仓库 skill 发生更新时，维护规则要求在校验和交付前重新运行同步脚本。安装或更新后重启 Codex，让 skill 注册表重新加载。同步单个 skill 时使用同一模式：
 
 ```bash
-rsync -a --delete --exclude .DS_Store ./<skill-name>/ ~/.codex/skills/<skill-name>/
+rsync -a --delete --exclude .DS_Store ./<skill-name>/ ~/.agents/skills/<skill-name>/
 ```
 
 ## Validate Skills

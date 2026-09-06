@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-This repository stores personal Codex skills. Each top-level skill directory is intended to be copied into `~/.codex/skills/<skill-name>/`.
+This repository stores personal Codex skills. Each top-level skill directory is intended to be copied into `~/.agents/skills/<skill-name>/`.
 
 ## Skill Layout
 
@@ -29,4 +29,4 @@ If that cached `PyYAML` path is unavailable, use any Python environment with `Py
 
 ## Local Installation
 
-Install a skill by copying its whole directory into `~/.codex/skills/`. Restart Codex after installing or updating a skill so the skill registry reloads.
+Install a skill by copying its whole directory into `~/.agents/skills/`. When any repository skill is added, modified, removed, or renamed, run `scripts/sync-installed-skills.sh` before validation and delivery; this synchronizes every skill present in the repository to the installed directory. Pass another installation root as the first argument when needed. Do not copy installed-only skills back into this repository. Restart Codex after installing or updating a skill so the skill registry reloads.
