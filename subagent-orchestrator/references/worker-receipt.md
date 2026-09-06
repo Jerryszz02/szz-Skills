@@ -1,6 +1,6 @@
 # Worker Receipt Contract
 
-Every dispatched worker must produce one receipt using this schema. External runners write `worker-receipt.json`; for native workers, the main agent records the same fields from the `spawn_agent` call and returned runtime evidence.
+Every dispatched worker must produce one receipt using this schema. External runners write `worker-receipt.json`; for native workers, the main agent records dispatch fields from `spawn_agent` and actual model/usage only from returned runtime evidence. Record unknown model as `null` if the runtime does not expose it; a requested model or worker self-description is not observed metadata.
 
 ```json
 {
@@ -47,4 +47,14 @@ Every dispatched worker must produce one receipt using this schema. External run
 
 ## Acceptance
 
-The main agent reviews the receipt together with the actual diff and test output. A receipt is audit evidence, not proof that the implementation is correct. A successful Kimi run is not acceptable when its actual model, reasoning tier, or usage cannot be recovered; the runner marks it `metadata-incomplete`.
+The main agent reviews the receipt together with the actual diff and test output. Native correctness can be accepted when runtime usage/model metadata is unavailable, but accounting remains incomplete; record this limitation explicitly. A receipt is audit evidence, not proof that the implementation is correct. A successful Kimi run is not acceptable when its actual model, reasoning tier, or usage cannot be recovered; the runner marks it `metadata-incomplete`.
+
+## Task-Level Accounting
+
+Keep all attempted worker receipts, including failed, scope-rejected, and metadata-incomplete runs. Record stable slice IDs and attempt numbers in the task ledger. Include integration/check workers and corrective follow-ups. Preflight-only rejection has no model attempt; unknown launch state is recorded with unavailable usage.
+
+Record one separate manager receipt for the user task with `actual_model`, `status`, and the same `usage` object. It must contain only the main agent's task-local usage, excluding subagents. Use runtime task totals or end-minus-start cumulative counters with known scope. A continuing worker's follow-up likewise needs non-overlapping attempt deltas, not its full session total repeated for every attempt. Preserve the source and counter boundaries in `evidence`; retain original artifacts outside the repository.
+
+Do not use account quota percentages, text length, requested model names, or an unverified session counter as task token evidence. Do not subtract child usage unless the runtime explicitly documents that it is included. When the current runtime cannot expose scoped usage, record `usage.available: false`, null core totals and a source explaining the limitation. The existing `worker_receipt.py native` command requires an observed model; if it is unavailable, write the receipt with null model directly instead of passing the requested alias to that command.
+
+Read `usage-evaluation.md` for the run manifest, offline aggregation command and controlled comparison protocol. Receipt collection for external runners is automatic; main/native scoped collection and the task manifest remain root-managed. The aggregator cannot prove that supplied telemetry is authentic or scoped correctly.
