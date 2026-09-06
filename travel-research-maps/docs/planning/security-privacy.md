@@ -12,9 +12,9 @@
 
 | 证据 | 安全或隐私要求 |
 | --- | --- |
-| `SKILL.md` 工作流 2 | Keyless Firecrawl、浏览器和电脑控制只读取公开内容，不绕过登录墙、验证码、付费墙或反爬机制。 |
-| `SKILL.md` 工作流 2 | Keyless Firecrawl 不可用时依次使用浏览器和电脑控制，不把 web-search 摘要当证据。 |
-| `SKILL.md` 工作流 7-9 | Google Maps 写入必须等待用户明确批准。 |
+| `references/research-workflow.md` 工作流 2 | Keyless Firecrawl、浏览器和电脑控制只读取公开内容，不绕过登录墙、验证码、付费墙或反爬机制。 |
+| `references/research-workflow.md` 工作流 2 | Keyless Firecrawl 不可用时依次使用浏览器和电脑控制，不把 web-search 摘要当证据。 |
+| `references/maps-saving.md` | Google Maps 写入必须等待用户明确批准。 |
 | `README.md` Notes | 仓库不包含 API key、token、Cookie、账号密码或其他凭据。 |
 | `score_candidates.py` | 评分器不执行网络请求。 |
 
@@ -73,13 +73,13 @@
 
 ## 实现指引
 
-- 新增外部服务或网络调用前，必须更新本文件和 `SKILL.md`。
+- 新增外部服务或网络调用前，必须更新本文件和对应流程参考文件。
 - 自动化失败时优先停止并报告，不应增加绕过逻辑。
 - 不回退到 Firecrawl MCP/API Key；浏览器和电脑控制不得读取或写入任务外的用户数据。
 
 ## 验收标准
 
-- `SKILL.md` 明确禁止绕过平台限制。
+- `references/research-workflow.md` 与 `references/maps-saving.md` 明确禁止绕过平台限制。
 - Google Maps 写入路径继续要求用户批准。
 - 文档和测试中不包含真实账号、Cookie、token、私钥或 `.env` 值。
 

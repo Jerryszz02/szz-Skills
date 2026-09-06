@@ -12,7 +12,7 @@
 
 | 证据 | 产品含义 |
 | --- | --- |
-| `SKILL.md` | 默认使用 Keyless Firecrawl，再用浏览器和电脑控制读取公开旅行内容。 |
+| `references/research-workflow.md` | 默认使用 Keyless Firecrawl，再用浏览器和电脑控制读取公开旅行内容。 |
 | `scoring-rubric.md` | 证据必须可识别平台、URL、作者或频道、日期、立场和营销状态。 |
 | `score_candidates.py` | 评分器保持离线确定性，并可要求优先项至少有 2 个正向平台。 |
 | `README.md` | Google Maps 只用于核验和批准后的列表保存。 |
@@ -40,7 +40,7 @@
 
 ## 成功标准
 
-- `SKILL.md` 明确 Keyless Firecrawl、浏览器和电脑控制的顺序、多平台策略和覆盖不足停止规则。
+- `references/research-workflow.md` 明确 Keyless Firecrawl、浏览器和电脑控制的顺序、多平台策略和覆盖不足停止规则。
 - 评分输出包含正向平台信息，并能把单平台高分候选降为备选。
 - `python3 -m unittest test_score_candidates.py` 在 `scripts/` 下通过。
 - 用户批准前不会写入 Google Maps。

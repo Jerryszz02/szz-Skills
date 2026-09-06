@@ -7,8 +7,9 @@ This repository stores personal Codex skills. Each top-level skill directory is 
 ## Skill Layout
 
 - Every skill must include `SKILL.md` with YAML frontmatter containing only `name` and `description`.
-- Keep `SKILL.md` focused on triggerable workflow instructions.
-- Put detailed reusable guidance in `references/`.
+- Keep `description` focused on when to trigger; add exclusions only to prevent likely misrouting.
+- Keep root `SKILL.md` as a short router; put detailed workflows in `references/` and read only the relevant files.
+- Review triggering, non-triggering, and unavailable-dependency scenarios when changing a skill.
 - Put deterministic helpers in `scripts/` and cover them with focused tests when they exist.
 - Put UI metadata in `agents/openai.yaml`; `interface.default_prompt` must mention the skill as `$skill-name`.
 

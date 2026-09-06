@@ -6,7 +6,7 @@
 
 ## 更新时间
 
-2026-07-13
+2026-09-06
 
 ## 已检查的项目根目录
 
@@ -16,7 +16,8 @@
 
 | 证据 | 用途 |
 | --- | --- |
-| `SKILL.md` | 触发条件、Keyless Firecrawl/浏览器/电脑控制工作流、覆盖门槛、审核清单和 Google Maps 写入边界。 |
+| `SKILL.md` | 触发边界与按需路由。 |
+| `references/research-workflow.md`、`references/maps-saving.md` | 按请求类别研究、覆盖门槛、审核清单与批准后地图保存。 |
 | `references/scoring-rubric.md` | 多平台证据、推荐档位、营销排除、分层和事实核验规则。 |
 | `scripts/score_candidates.py` | 离线评分、去重、日期过滤、平台门槛和 JSON 输入输出。 |
 | `scripts/test_score_candidates.py` | 评分器回归测试场景。 |

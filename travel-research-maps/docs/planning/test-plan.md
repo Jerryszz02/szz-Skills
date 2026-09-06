@@ -14,7 +14,7 @@
 | --- | --- |
 | `score_candidates.py` | 可用 unittest 覆盖离线评分逻辑。 |
 | `test_score_candidates.py` | 当前回归测试覆盖分层、过滤、去重、严重风险和平台门槛。 |
-| `SKILL.md` | Keyless Firecrawl、浏览器/电脑控制和 Google Maps 流程需要人工审阅。 |
+| `SKILL.md` 及其流程参考文件 | Keyless Firecrawl、浏览器/电脑控制和 Google Maps 流程需要人工审阅。 |
 | `AGENTS.md` | 修改 skill 后需要运行 quick validate。 |
 
 ## 自动化检查
@@ -46,11 +46,21 @@ python3 /Users/jerryszz/.codex/skills/.system/skill-creator/scripts/quick_valida
 
 ## 人工审阅
 
-- `SKILL.md` 明确 Keyless Firecrawl 使用显式空 API Key，且不调用 Firecrawl MCP、启动器、环境变量或 Keychain。
-- `SKILL.md` 明确浏览器控制优先于电脑控制，二者均只读取公开页面且不绕过访问限制。
+- `references/research-workflow.md` 明确 Keyless Firecrawl 使用显式空 API Key，且不调用 Firecrawl MCP、启动器、环境变量或 Keychain。
+- `references/research-workflow.md` 明确浏览器控制优先于电脑控制，二者均只读取公开页面且不绕过访问限制。
 - Google Maps 写入仍必须等用户批准。
 - 覆盖不足时仍只报告缺口，不输出伪完整清单。
 - 文档中不包含 API key、Cookie、token 或账号凭据。
+
+### 路由场景检查（指令审阅，不等于实际任务测试）
+
+| 请求或环境 | 预期行为 |
+| --- | --- |
+| “只研究京都餐厅” | 只读取研究流程，不强制补景点；评分时再读评分细则。 |
+| “把已审核的 A、B 保存到列表 X” | 已明确批准时直接衔接地图保存，仍核验匹配和状态。 |
+| “把已有景点排成三天行程” | 不触发完整地点研究。 |
+| Keyless 不可用 | 走浏览器/电脑控制；均无法取证时报告缺口，不索取密钥。 |
+| 只有研究请求、无地图批准 | 输出审核清单，不保存地图。 |
 
 ## 未覆盖风险
 

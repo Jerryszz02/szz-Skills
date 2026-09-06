@@ -12,7 +12,7 @@
 
 | 模块 | 职责 |
 | --- | --- |
-| `SKILL.md` | 定义触发条件、Keyless Firecrawl/浏览器/电脑控制研究流程、覆盖门槛、输出格式和地图写入条件。 |
+| `SKILL.md` | 定义触发与按需路由；研究和地图保存分别见 `references/research-workflow.md`、`references/maps-saving.md`。 |
 | `references/scoring-rubric.md` | 定义多平台证据、推荐档位、营销识别、分层和事实核验优先级。 |
 | `scripts/score_candidates.py` | 对已收集证据做离线去重、日期过滤、营销排除、计分、平台统计和分层。 |
 | `scripts/test_score_candidates.py` | 覆盖评分阈值、负面证据、营销/重复/过期过滤、严重风险和平台门槛。 |
@@ -22,7 +22,7 @@
 
 ```mermaid
 flowchart TD
-    A["用户请求"] --> B["SKILL.md 工作流"]
+    A["用户请求"] --> B["SKILL.md 路由"]
     B --> C["Keyless Firecrawl 搜索"]
     C --> D["浏览器/电脑控制读取公开页面"]
     D --> E["候选证据 JSON"]
@@ -38,7 +38,7 @@ flowchart TD
 
 ## 数据流或控制流
 
-1. `SKILL.md` 根据用户请求提取目的地和日期。
+1. 入口选择研究或地图保存；研究流程按用户请求提取目的地、日期与类别。以下为完整研究路径，已有审核清单可直接衔接地图保存。
 2. Codex 优先通过显式空 API Key 的 Firecrawl Keyless 搜索公开内容，再用浏览器控制读取页面；必要时以电脑控制作为浏览器交互兜底。
 3. 操作者把候选证据整理为 JSON，包含候选名称、类别、来源、URL、作者或频道、发布日期、推荐立场、营销标记、内容指纹和摘要。
 4. `score_candidates.py` 读取 JSON，输出每个候选的分层、净分、正负来源数、正向平台、有效证据和被排除证据统计。
@@ -74,7 +74,7 @@ flowchart TD
 ## 实现指引
 
 - 新增证据字段时，先在 `references/scoring-rubric.md` 说明语义，再在 `score_candidates.py` 和测试中实现。
-- 新增外部研究能力时，必须同步更新 `SKILL.md` 的安全边界和 `security-privacy.md`。
+- 新增外部研究能力时，必须同步更新对应流程参考文件的安全边界和 `security-privacy.md`。
 - 不要把 Firecrawl、浏览器自动化或 Google Maps 写入细节放进评分脚本。
 
 ## 验收标准
