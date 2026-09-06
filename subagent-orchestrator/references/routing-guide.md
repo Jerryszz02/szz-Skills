@@ -1,63 +1,55 @@
 # Routing Guide
 
-Pass the Delegation Gate before every intended `spawn_agent` call. Use task properties before model names to decide whether delegation is justified, then use the fixed worker fallback order. File count alone does not determine complexity.
+Optimize main-model work and successful task completion. Delegation can reduce main-model context and still increase total tokens; do not equate model names, lower unit prices, or parallelism with measured savings.
 
 ## Decision Matrix
 
-| Task shape | Route | Required constraints |
+| Task shape | Route | Constraints |
 | --- | --- | --- |
-| Small, tightly coupled, sequential, or coordination-heavy | Main manager | Explain briefly why delegation would not help. |
-| Any bounded, safe delegated slice | DeepSeek via `dsh --profile headless` | First choice; detached worktree, bounded paths, no secrets or high-risk work, reviewable patch. |
-| Same task when DeepSeek is unavailable or fails | Kimi Code | Second choice; detached worktree, bounded paths, no secrets or high-risk work, reviewable patch. |
-| Same task when both external routes cannot be used | Luna | Third choice; explicit model and reasoning effort; full task packet; no nested delegation. |
-| Same task when Luna is not callable or fails | Terra | Final worker fallback; explicit model and reasoning effort; full task packet; no nested delegation. |
-| Architecture, ambiguous debugging, security, authentication, payments, migrations, destructive work, integration, or final review | Main manager | Scout evidence may be delegated, but judgment and acceptance remain in the main thread. |
+| Tiny edit or handoff more expensive than direct work | Main manager | Briefly record the reason; no ceremonial worker. |
+| Code discovery, evidence, implementation, tests, routine fixes, documentation | DeepSeek → Kimi → Luna → Terra | Bounded ownership and acceptance; follow dependencies sequentially when needed. |
+| Mechanical integration and final combined-workspace checks | Luna → Terra → main manager | Explicit exception to execution order; serialize writes and use the actual target workspace. |
+| Architecture, ambiguous debugging decisions, security judgments, semantic conflicts, final acceptance | Main manager | Delegate safe evidence gathering; retain decisions. External exclusions still apply to implementation. |
 
-## Availability and Fallback
+## Availability and Context
 
-1. Try DeepSeek first. Confirm `dsh` is executable, `dsh --profile headless --help` succeeds, the task is safe for an external worker, and the task packet passes `run-dsh-worker.sh` preflight.
-2. If DeepSeek is absent, fails preflight, or fails the bounded task, try Kimi. Confirm `kimi` is executable and the same safety and packet checks pass.
-3. If neither external route can be used, inspect the active native subagent tool for callable model overrides. A model catalog entry or custom-agent file is not proof that the current session can select it.
-4. Try Luna, then Terra. For scouting use explicit `reasoning_effort: "low"`; for implementation use explicit `reasoning_effort: "medium"`. Never omit the model or reasoning effort and never use Sol.
-5. Native dispatch must use `fork_turns: "none"` so the bounded task packet, rather than replayed parent history, is the worker's context. Put all required context in `message`.
-6. Never silently substitute a model or provider. Record why each skipped or failed route was unavailable and report the chosen fallback.
+1. For execution, try DeepSeek first: confirm `dsh` is executable, `dsh --profile headless --help` succeeds, the packet passes runner preflight, and the data/task is permitted for that provider. Use `scripts/run-dsh-worker.sh`.
+2. If DeepSeek is unavailable or fails the slice, use Kimi when permitted and callable through `scripts/run-kimi-worker.sh`.
+3. If external routes cannot be used, inspect the live native tool for model overrides; select Luna, then Terra. A catalog entry alone is not proof of callability. Record skipped-route reasons, including context or authorization restrictions.
+4. Native scouting uses explicit `reasoning_effort: "low"`; implementation and integration use `"medium"`. Never omit the model, inherit full parent history, or use Sol.
+5. Integration starts at Luna even if DeepSeek is available. DeepSeek/Kimi runners start from committed HEAD and reject dirty allowed paths. A test run in that detached checkout does not verify the current combined workspace. Native access to the target must also be confirmed; if unavailable, the manager performs the integration/checks there.
+6. Use the runtime model evidence when reporting actual models. Do not substitute a requested alias or self-reported model identity for observed metadata.
 
 ## Native Spawn Gate
 
-Only the root/main agent may call `spawn_agent`. Immediately before each native spawn:
+Only the root may dispatch. Immediately before each `spawn_agent`:
 
-1. Confirm the current agent is the root/main agent.
-2. Call `list_agents` and count live workers plus the root agent.
-3. Derive remaining slots from the concurrency limit stated by the current runtime; do not hardcode a limit from an older session.
-4. If zero slots remain, do not call `spawn_agent`. Wait, queue the task, or keep it in the main thread.
-5. Send the complete task packet and explicitly prohibit `spawn_agent`, nested agents, and any other delegation.
+1. Call `list_agents`; count live workers plus root against the active runtime limit.
+2. When no slot remains, queue or wait. Do not hardcode an older concurrency limit.
+3. Pass explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and the complete task packet. Prohibit all nested delegation.
 
-Native examples:
+## Integration Contract
 
-```text
-Scout:  model="gpt-5.6-luna",  reasoning_effort="low",    fork_turns="none"
-Builder: model="gpt-5.6-luna", reasoning_effort="medium", fork_turns="none"
-Fallback scout:  model="gpt-5.6-terra", reasoning_effort="low",    fork_turns="none"
-Fallback builder: model="gpt-5.6-terra", reasoning_effort="medium", fork_turns="none"
-```
+- The root reviews scope, patch content, and evidence, then identifies the exact approved artifact (path plus digest) and target workspace. Worker creation does not itself authorize applying arbitrary patches.
+- Finish target-workspace writers first. Use one integration/check worker at a time; independent work elsewhere may continue. Record starting HEAD and dirty paths, preserve unrelated edits, and check patch applicability before applying.
+- Limit integration to approved patch application and mechanical operations. A semantic conflict, shared-interface change, new failure needing code changes, or out-of-scope operation returns evidence to the manager for a decision or a bounded repair packet.
+- Name required commands and evidence output paths. Capture command, cwd, exit code, and concise result; store full logs outside the tracked project. Check the integrated state, including uncommitted changes. A stale pre-integration pass is insufficient.
+- Verification alone must not silently repair source files. A corrective follow-up counts toward recovery limits. Root still owns final review, risk decisions, and acceptance; publication requires the task's existing authorization.
 
-## Parallelism Gate
+## Recovery Budget
 
-Parallel execution requires all of the following:
+Defaults for one user task, unless the user explicitly sets a different budget:
 
-- At least two useful tasks with `Dependencies: none`.
-- Explicit, non-overlapping ownership.
-- No shared lockfile, database schema, generated artifact, API contract, or type definition being edited concurrently.
-- Independent acceptance commands.
-- Expected speed or context benefit greater than dispatch, review, and integration cost.
+- At most **3 execution attempts per slice**, across all providers and native workers.
+- At most **2 recovery attempts for the whole task**, shared across execution, integration, and verification slices. A recovery is any worker attempt after that slice's initial attempt, including provider fallback after execution failure and corrective follow-ups to an existing worker. Use stable slice IDs; renaming or splitting failed work does not reset its recovery count.
+- At most **1 targeted retry on the same route**. Use it only for a precise, fixable failure; otherwise advance through the role's fallback order. Both limits above still apply.
+- Missing executables, denied dispatch, and preflight failures before model execution do not consume execution attempts. Once model execution starts, its failure and token cost count, even when no receipt is recoverable. Unknown launch state is conservatively counted.
+- When either limit is exhausted, stop worker recovery and return the unresolved criterion to the main manager. The manager may complete a bounded fix directly or report a real blocker; it must not launch a fresh worker loop under a new name.
 
-If an interface is shared, stabilize it in the main thread before dispatching its consumers.
+The root tracks these limits in its ledger; existing one-shot runners do not enforce a cross-worker budget. No strict token or spend cap is implied when the runtime lacks a stop mechanism. Record every model attempt, failed attempt, and missing receipt for accounting.
 
-## Retry and Acceptance
+## Context and Return Budget
 
-- Give the retry only the failed criterion and relevant evidence, not a fresh broad request.
-- Move a failed task through the configured order: DeepSeek, Kimi, Luna, Terra, then main thread.
-- Permit at most one targeted retry on a route before moving to the next route.
-- Inspect actual diffs and command output. Do not accept a worker result from its prose summary alone.
-- Require the unified worker receipt from `worker-receipt.md`. Never substitute the requested model for the observed model or estimate unavailable tokens.
-- Reject a successful Kimi result when its actual model, reasoning tier, or usage cannot be recovered from runtime evidence.
+- Task packets carry relevant facts and paths, not whole conversation history or broad copied files. Workers read owned code directly. Prefer one cohesive slice to many trivial ones.
+- Target at most 250 words in each worker's final prose: status, changed paths, concise result, exact checks/exit codes, blockers, and artifact locations. Put full logs and long evidence in files. Expand only for an actionable issue that cannot be represented safely in that budget.
+- Request updates on completion, failure, or a decision needed. Do not poll full logs or require routine narration. The manager reads critical evidence and actual diffs without replaying the worker's entire search.

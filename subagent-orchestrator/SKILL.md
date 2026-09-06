@@ -1,76 +1,60 @@
 ---
 name: subagent-orchestrator
-description: Gate and orchestrate Codex delegation across a main manager, a DeepSeek Harness headless worker, an isolated Kimi Code worker, and explicit Luna or Terra native subagents. Must be used before every intended spawn_agent call and whenever work may benefit from decomposition, parallel investigation or implementation, multiple independent workstreams, or explicit subagent delegation. Delegate only bounded, independent, verifiable work; keep architecture, sensitive judgment, integration, and final acceptance with the main agent.
+description: Orchestrate bounded subagent work with a planning and acceptance manager, DeepSeek-first execution, and native integration. Use before intended spawn_agent calls and for requests to delegate or coordinate multiple workstreams. Reduce main-model work through focused task packets, evidence-based acceptance, and bounded recovery.
 ---
 
 # Subagent Orchestrator
 
-Treat the root agent as the only manager. Only the root agent may invoke `spawn_agent`; every worker must be explicitly prohibited from delegating or spawning another worker. Never select Sol for a worker.
+Keep GPT-6, when selected as the main model, focused on requirements, planning, decisions, and final acceptance. Do not switch the user's main model. Delegate substantial execution by default; do not repeat a worker's exploration in the main thread. Only the root/main agent may dispatch workers. Every worker must be prohibited from nested delegation and `spawn_agent`. Never select Sol for a worker.
 
 ## Delegation Gate
 
-Before every intended `spawn_agent` call, and before substantial work that may benefit from delegation:
+1. Read repository instructions and inspect current Git state with the minimum context needed to dispatch safely. Delegate deeper code discovery and evidence gathering before detailed planning when needed.
+2. Define bounded work with explicit inputs, ownership, dependencies, and observable acceptance. Keep tiny tasks or work whose handoff and review would cost more than direct completion in the main thread; briefly record the exception.
+3. Keep architecture, ambiguous tradeoffs, security judgments, conflict decisions, and acceptance with the main agent. Workers may gather safe evidence and implement an approved design within their route's boundary.
+4. Sequential work can still be delegated. Parallelize only independent slices with non-overlapping ownership and independent acceptance; stabilize shared interfaces before consumers start.
+5. Read `references/routing-guide.md` for route selection and recovery limits, `references/task-packet.md` for dispatch, and `references/worker-receipt.md` for evidence and task-level usage. Do not start workers merely because the skill triggered.
 
-1. Identify candidate workstreams and their dependencies.
-2. Keep the task with the main agent when it is small, tightly coupled, sequential, security-sensitive, destructive, or cheaper to complete directly.
-3. Delegate only bounded work with explicit inputs, outputs, ownership, and verification.
-4. Parallelize only when at least two useful tasks have no unresolved dependency, have non-overlapping ownership, and can be accepted independently.
-5. Record the routing choice and the reason. Do not start workers merely because this skill triggered.
-6. Immediately before a native spawn, call `list_agents`, derive the remaining native concurrency slots from the active runtime limit, and do not call `spawn_agent` when no slot remains.
+## Roles and Routes
 
-Read `references/routing-guide.md` before choosing a worker. Read `references/task-packet.md` before constructing any delegated task. Read `references/worker-receipt.md` before dispatch so every route returns the same audit fields.
+- **Main manager:** Own requirements, task map, interfaces, risk decisions, patch authorization, and final acceptance. Inspect actual diffs, relevant code, and verification evidence without replaying every exploration log. Handle tiny work or take over when bounded worker recovery is exhausted.
+- **Execution workers:** Code discovery, evidence gathering, implementation, tests, routine fixes, and documentation use **DeepSeek → Kimi → Luna → Terra**, within the recovery budget. Verify availability and safety; do not skip an eligible earlier route for familiarity. DeepSeek and Kimi use the existing detached-worktree runners. Native scouting uses `low`; implementation uses `medium`.
+- **Integration/check worker:** Use **Luna (`medium`) → Terra (`medium`) → main manager** for approved patch application, mechanical integration, and checks in the actual target workspace. This is an explicit role exception to the execution order: external HEAD-only runners cannot see uncommitted integrated changes. Root authorization of the concrete patch is required; it does not add a user approval step. Semantic conflicts return to the manager.
 
-## Roles
-
-- **Main manager:** Own requirements, planning, task dependencies, interfaces, security decisions, conflict resolution, integration, final diff review, and acceptance. Implement directly when delegation has no clear benefit. It is the only role allowed to call `spawn_agent`.
-- **DeepSeek worker:** First choice for every delegated slice when `dsh --profile headless` is callable and the task is safe for an external worker. Run it through `scripts/run-dsh-worker.sh` in an isolated detached worktree.
-- **Kimi worker:** Second choice when DeepSeek is unavailable, fails its preflight, or fails the bounded task. Use only for a slice that can start from current `HEAD`, owns bounded paths, and has deterministic acceptance. Run it through `scripts/run-kimi-worker.sh`.
-- **Luna native worker:** Third choice when the external routes cannot be used. Use `model: "gpt-5.6-luna"` and explicitly set `reasoning_effort`: `low` for scouting or `medium` for implementation.
-- **Terra native worker:** Final worker fallback. Use `model: "gpt-5.6-terra"` and explicitly set `reasoning_effort`: `low` for scouting or `medium` for implementation.
-
-The required fallback order is DeepSeek, Kimi, Luna, then Terra. Do not skip an available earlier route merely because a later model is more familiar. Model names are not proof of availability; verify the actual CLI or native tool before dispatch. Never use Sol for a worker.
+For native dispatch, use explicit `model: "gpt-5.6-luna"` or `"gpt-5.6-terra"`, explicit `reasoning_effort`, and `fork_turns: "none"`. Immediately before **every** spawn, call `list_agents`, derive remaining slots from the active runtime limit, and queue when full. Include the complete task packet in the message.
 
 ## Workflow
 
-1. Inspect repository instructions and current Git state before delegation.
-2. Build a dependency-aware task map. Stabilize shared interfaces before starting downstream tasks.
-3. Write a complete task packet for each worker. Every packet must explicitly say nested delegation and `spawn_agent` are forbidden.
-4. Try the worker routes in order: DeepSeek, Kimi, Luna, Terra. A route is unavailable only when its executable/tool/model is absent, its required preflight fails, or the task violates that route's safety boundary.
-5. Before every native spawn, confirm this is the root agent, call `list_agents`, calculate remaining native slots, and stop or queue the task when none remain. Call `spawn_agent` with explicit `model`, explicit `reasoning_effort`, and `fork_turns: "none"`; include the full task packet in `message`.
-6. Dispatch dependent tasks sequentially. Run workers concurrently only for disjoint, dependency-free slices with independent acceptance.
-7. Require a worker receipt containing the task objective, actual model, reasoning tier, fork range, status, and runtime token usage. External runners write `worker-receipt.json`; the main agent records the same schema for native workers.
-8. Review actual worker evidence. For DeepSeek or Kimi, inspect `worker-receipt.json`, `manifest.json`, `status.txt`, `scope-check.txt`, and `changes.patch`; then run `git apply --check` before accepting the patch. Kimi is not acceptable when its actual model, reasoning tier, or usage metadata is incomplete.
-9. Retry a failed task at most once with the exact failed criterion. Then continue to the next fallback route or retain it in the main thread and report the fallback.
-10. Run deterministic verification against the integrated workspace. The main agent owns the final answer.
+1. Set the task's acceptance criteria, slice IDs, and recovery limits before dispatch. Record role, route, attempt, and skipped-route reasons in a small task ledger. Apply the limits in `references/routing-guide.md` before every retry, fallback, or corrective follow-up.
+2. Send only necessary requirements, file locations, shared interface decisions, and relevant failure evidence. Ask for a short result with artifact pointers; keep bulk logs in files. Reuse existing worker evidence rather than assigning duplicate exploration.
+3. Require a unified worker receipt. External runners write `worker-receipt.json`; record native runtime evidence in the same schema. Missing usage remains unknown, never estimated or silently zero.
+4. Review external `worker-receipt.json`, `manifest.json`, `status.txt`, `scope-check.txt`, and `changes.patch`. Reject out-of-scope changes. The root reviews and authorizes the exact patch before the integration worker can apply it.
+5. Serialize integration into an identified target workspace after its writers finish. Capture the starting HEAD and dirty paths, preserve unrelated edits, and run `git apply --check` before applying approved patches. Do not resolve semantic conflicts without a manager decision. Run the required checks against the combined result; invalidate affected check results after further changes.
+6. Accept from the actual integrated diff and verification artifacts, not a worker's completion claim. Inspect key logic and gaps according to risk. The manager may perform focused independent checks; avoid broad duplicate test runs without a new reason.
+7. Report outcome, remaining limitations, and available main/worker/task usage. Use `scripts/summarize_usage.py` and the run manifest in `references/usage-evaluation.md` for task totals. Read that reference when measuring savings or testing this skill; do not claim savings from worker receipts alone.
 
 ## External Worker Boundary
 
-DeepSeek and Kimi worktree isolation is a Git conflict boundary, not an operating-system security sandbox.
+Detached worktrees isolate Git changes, not operating-system access.
 
 - Do not send secrets, credentials, cookies, private keys, `.env` values, private session state, or account access tasks.
-- Do not use an external worker for authentication, payments, security conclusions, migrations, destructive Git operations, or work that depends on uncommitted main-workspace changes.
-- Require the task packet to declare that the slice is `HEAD`-only and to enumerate allowed and forbidden paths.
-- Never apply an external worker patch automatically. Reject out-of-scope changes and inspect all accepted changes in the main thread.
-- Do not create project `.codex/config.toml` files or custom agent TOML files as part of this workflow.
+- Do not use external workers for authentication, payments, security conclusions, migrations, destructive Git operations, or tasks depending on uncommitted main-workspace changes.
+- Require `HEAD-only dependency: yes` and bounded allowed/forbidden paths. Existing runners reject dirty allowed paths; do not bypass this to integrate changes.
+- Honor provider/data authorization and approval-review boundaries. When an external route is disallowed, use a permitted native route; do not send the same data through another external provider as a workaround.
+- Never automatically apply an external patch. Do not create project `.codex/config.toml` or custom agent TOML files as part of this workflow.
 
-## DeepSeek Command
+## External Commands
 
 ```bash
 subagent-orchestrator/scripts/run-dsh-worker.sh \
   --cwd /absolute/project/path \
   --task-file /absolute/task-packet.md \
   --output-dir /absolute/artifact-directory
-```
 
-The runner uses the configured `dsh --profile headless` profile. After at most one targeted retry, a nonzero runner exit, missing command, failed profile preflight, or failed scope check moves the task to Kimi; it does not authorize bypassing the task boundary.
-
-## Kimi Command
-
-```bash
 subagent-orchestrator/scripts/run-kimi-worker.sh \
   --cwd /absolute/project/path \
   --task-file /absolute/task-packet.md \
   --output-dir /absolute/artifact-directory
 ```
 
-Pass `--model <alias>` only when the user or current Kimi configuration requires a specific model. Otherwise let Kimi use its configured default.
+Use separate empty output directories for each attempt. Kimi uses its configured default model unless the user or current configuration requires `--model <alias>`. Runner failures do not authorize bypassing scope or exceeding the task's recovery budget.
