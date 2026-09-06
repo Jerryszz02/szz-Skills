@@ -23,7 +23,7 @@
 
 采用“Keyless Firecrawl 发现公开内容，浏览器/电脑控制读取和核验，评分脚本确定性评分，Google Maps 批准后保存”的分层方案：
 
-- `SKILL.md` 负责人机流程、无 API Key 研究顺序、覆盖门槛、事实核验和 Google Maps 写入批准。
+- `SKILL.md` 只负责触发与路由；`references/research-workflow.md` 负责研究、覆盖门槛和核验，`references/maps-saving.md` 负责批准后保存。
 - `references/scoring-rubric.md` 负责解释多平台证据、营销排除、平台门槛和审计口径。
 - `scripts/score_candidates.py` 只负责对已整理好的候选证据做离线评分。
 
@@ -99,10 +99,10 @@
 
 | 改动类型 | 应修改文件 |
 | --- | --- |
-| 调整触发条件或人机流程 | `SKILL.md`、必要时更新 `user-flow.md`。 |
+| 调整触发条件或人机流程 | `SKILL.md` 或对应流程参考文件、必要时更新 `user-flow.md`。 |
 | 调整推荐档位或分层门槛 | `references/scoring-rubric.md`、`scripts/score_candidates.py`、`scripts/test_score_candidates.py`。 |
 | 调整评分器字段 | `scripts/score_candidates.py`、测试、必要时补充示例或 schema 文档。 |
-| 调整安全边界 | `SKILL.md`、`security-privacy.md`。 |
+| 调整安全边界 | 对应流程参考文件、`security-privacy.md`。 |
 | 调整 UI 展示名或默认提示 | `agents/openai.yaml`。 |
 
 ## 验收指引

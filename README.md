@@ -7,7 +7,7 @@
 | Skill | 状态 | 主要用途 | 典型触发 |
 | --- | --- | --- | --- |
 | `article-summary` | 可用 | 按原文顺序总结文章、网页、PDF、Word 文档或纯文本，并标注来源位置 | “总结一下这篇文章”“这个链接讲了什么”“帮我概括这个 PDF” |
-| `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制收集多平台旅行证据，生成中文审核清单，并在批准后保存到 Google Maps | “去哪里旅游”“做个旅游计划”“看一下哪里的景点/餐厅”“加入地图列表” |
+| `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制研究景点或餐厅，生成审核清单，并在批准后保存到 Google Maps | “研究京都景点”“推荐成都餐厅”“把审核清单加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
 | `subagent-orchestrator` | 可用 | 主模型规划验收，DeepSeek 优先执行，Luna 集成检查，并汇总任务用量 | “拆分这个复杂任务”“调用 subagent 前先评估”“用 DeepSeek worker 实现” |
@@ -87,7 +87,7 @@
 - 从请求中提取目的地和旅行日期；未提供日期时标记为“计划前往日期未知”。
 - 优先使用无需 API Key 的 Firecrawl Keyless；再用浏览器控制与电脑控制读取公开旅行内容，不使用 Firecrawl MCP。
 - 中国大陆目的地优先小红书和 Bilibili；境外目的地优先小红书、YouTube、Instagram 和公开旅行内容。
-- 分别满足覆盖门槛后再评分：景点至少浏览 10 篇相关内容并形成 10 个不同候选；餐厅至少浏览 10 篇相关内容并形成 5 个不同候选。
+- 只研究用户请求的类别：景点至少浏览 10 篇相关内容并形成 10 个不同候选；餐厅至少浏览 10 篇相关内容并形成 5 个不同候选。请求两类时均须达标，只问一类时不要求另一类覆盖。
 - 排除广告、赞助、探店邀约、优惠码、返佣链接、店方账号和官方旅游机构账号。
 - 用 `scripts/score_candidates.py` 做确定性去重、计分和分层。
 - 对“优先去”和“备选”地点核验门票、预约、营业时间、关闭风险和地址匹配。
@@ -115,7 +115,7 @@
 
 ### 输出
 
-默认只输出“景点”和“餐厅”两组，每项包含：
+只输出请求中的类别；请求两类时分“景点”和“餐厅”两组，每项包含：
 
 - 地点名称、开放/营业、预约状态；
 - 一句话介绍；
@@ -269,7 +269,7 @@ python3 subagent-orchestrator/scripts/summarize_usage.py --run /tmp/run.json --o
 
 ### 功能
 
-`product-demand-discovery` 用于通过公开互联网信息发现产品机会，重点找出真实用户痛点、可量化市场空间和竞品密度不高的方向。它依赖 Firecrawl MCP 做搜索、抓取和正文抽取；如果 Firecrawl MCP 不可用，会报告阻塞原因，而不是把普通搜索结果当作等价证据。
+`product-demand-discovery` 用于通过公开互联网信息发现产品机会，重点找出真实用户痛点、可量化市场空间和竞品密度不高的方向。优先使用宿主可用的 Firecrawl；缺失或读取失败时，使用已有的网页搜索、页面读取或浏览器能力继续核验。只有读到正文的页面才计入证据，工具降级不降低评分门槛。
 
 默认输入缺失时，它会使用以下研究范围：
 
@@ -281,13 +281,13 @@ python3 subagent-orchestrator/scripts/summarize_usage.py --run /tmp/run.json --o
 
 核心流程包括：
 
-- 使用 Firecrawl 搜索和读取公开页面，不把搜索结果摘要当作已读证据。
+- 发现当前可用工具，按痛点、竞品与市场三个方向搜索和读取公开正文；不把搜索结果摘要当作已读证据。
 - 优先采集高质量需求证据，例如 Reddit、Hacker News、V2EX、知乎、小红书、垂直论坛、G2、Capterra、App Store、Google Play、Chrome Web Store、GitHub issues、Discussions 和 Stack Overflow。
 - 用 Google Trends、Keyword Planner、Product Hunt、招聘网站、行业报告、年报和竞品案例辅助判断趋势和市场规模。
 - 排除明显广告、赞助、品牌账号、SEO 聚合页、affiliate 内容和重复转载。
 - 按 Demand Score、Market Score、Gap Score 计算 Overall Score。
 - 将候选分为“推荐”“观察”“淘汰”。
-- 把每次研究保存到当前工作目录的 `outputs/product-demand-discovery/`，并维护 `index.json`，避免重复推荐同一机会。
+- 默认把研究保存到当前工作目录的 `outputs/product-demand-discovery/`，并维护 `index.json`；用户指定目录时采用该目录，只要对话结果时不写文件。
 
 ### 怎么用
 
@@ -301,7 +301,7 @@ python3 subagent-orchestrator/scripts/summarize_usage.py --run /tmp/run.json --o
 
 ### 输出
 
-每次运行写入当前工作目录：
+默认写入当前工作目录；用户指定目录或明确不保存时遵循其要求：
 
 ```text
 outputs/product-demand-discovery/

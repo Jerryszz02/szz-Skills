@@ -2,6 +2,17 @@
 
 按“需求真实性、可审计性、可量化程度、噪声风险”选择来源。任何结论至少交叉验证 3 类来源。
 
+## 搜索矩阵
+
+按当前领域、地区和目标用户选择查询词；覆盖痛点、竞品和市场三个方向，无须逐个运行所有示例。
+
+- 痛点：`too expensive`、`I wish`、`looking for a tool`、`manual`、`spreadsheet`、`doesn't support`、`switching from`、`how do I`。
+- 竞品：`best`、`alternatives`、`competitors`、`reviews`、`pricing`、`vs`。
+- 市场：`market size`、`search volume`、`trend`、`jobs`、`budget`、`workflow`。
+- 中文：`太贵`、`有没有工具`、`替代品`、`差评`、`手动整理`、`表格管理`、`求推荐`。
+
+用已读正文中的具体用户、任务和痛点调整下一轮查询。工具替换不改变下面的来源权重和独立性要求。
+
 ## 高优先级：需求和缺口证据
 
 - Reddit、Hacker News、V2EX、知乎、小红书、垂直论坛：适合发现主动抱怨、求推荐、替代方案、手工 workaround。
