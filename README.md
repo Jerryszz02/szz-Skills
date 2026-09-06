@@ -254,7 +254,7 @@ subagent-orchestrator/scripts/run-kimi-worker.sh \
 
 ### 功能
 
-`product-demand-discovery` 用于通过公开互联网信息发现产品机会，重点找出真实用户痛点、可量化市场空间和竞品密度不高的方向。它依赖 Firecrawl MCP 做搜索、抓取和正文抽取；如果 Firecrawl MCP 不可用，会报告阻塞原因，而不是把普通搜索结果当作等价证据。
+`product-demand-discovery` 用于通过公开互联网信息发现产品机会，重点找出真实用户痛点、可量化市场空间和竞品密度不高的方向。优先使用宿主可用的 Firecrawl；缺失或读取失败时，使用已有的网页搜索、页面读取或浏览器能力继续核验。只有读到正文的页面才计入证据，工具降级不降低评分门槛。
 
 默认输入缺失时，它会使用以下研究范围：
 
@@ -266,13 +266,13 @@ subagent-orchestrator/scripts/run-kimi-worker.sh \
 
 核心流程包括：
 
-- 使用 Firecrawl 搜索和读取公开页面，不把搜索结果摘要当作已读证据。
+- 发现当前可用工具，按痛点、竞品与市场三个方向搜索和读取公开正文；不把搜索结果摘要当作已读证据。
 - 优先采集高质量需求证据，例如 Reddit、Hacker News、V2EX、知乎、小红书、垂直论坛、G2、Capterra、App Store、Google Play、Chrome Web Store、GitHub issues、Discussions 和 Stack Overflow。
 - 用 Google Trends、Keyword Planner、Product Hunt、招聘网站、行业报告、年报和竞品案例辅助判断趋势和市场规模。
 - 排除明显广告、赞助、品牌账号、SEO 聚合页、affiliate 内容和重复转载。
 - 按 Demand Score、Market Score、Gap Score 计算 Overall Score。
 - 将候选分为“推荐”“观察”“淘汰”。
-- 把每次研究保存到当前工作目录的 `outputs/product-demand-discovery/`，并维护 `index.json`，避免重复推荐同一机会。
+- 默认把研究保存到当前工作目录的 `outputs/product-demand-discovery/`，并维护 `index.json`；用户指定目录时采用该目录，只要对话结果时不写文件。
 
 ### 怎么用
 
@@ -286,7 +286,7 @@ subagent-orchestrator/scripts/run-kimi-worker.sh \
 
 ### 输出
 
-每次运行写入当前工作目录：
+默认写入当前工作目录；用户指定目录或明确不保存时遵循其要求：
 
 ```text
 outputs/product-demand-discovery/
