@@ -1,6 +1,6 @@
 ---
 name: subagent-orchestrator
-description: Orchestrate bounded subagent work with a planning and acceptance manager, DeepSeek-first execution, and native integration. Use before intended spawn_agent calls and for requests to delegate or coordinate multiple workstreams. Reduce main-model work through focused task packets, evidence-based acceptance, and bounded recovery.
+description: Orchestrate bounded subagent work with a planning and acceptance manager, DeepSeek-first execution, and native integration. Use for release-readiness assessments, cross-module code investigations, multi-step implementation, and explicit delegation requests, even when the user does not mention subagents; also use before intended spawn_agent calls. Reduce main-model work through focused task packets, evidence-based acceptance, and bounded recovery.
 ---
 
 # Subagent Orchestrator
@@ -9,8 +9,10 @@ Keep GPT-6, when selected as the main model, focused on requirements, planning, 
 
 ## Delegation Gate
 
+Run this gate before substantial exploration, and revisit it when an assessment becomes implementation or a new independent workstream appears.
+
 1. Read repository instructions and inspect current Git state with the minimum context needed to dispatch safely. Delegate deeper code discovery and evidence gathering before detailed planning when needed.
-2. Define bounded work with explicit inputs, ownership, dependencies, and observable acceptance. Keep tiny tasks or work whose handoff and review would cost more than direct completion in the main thread; briefly record the exception.
+2. Define bounded work with explicit inputs, ownership, dependencies, and observable acceptance. Keep tiny tasks or work whose handoff and review would cost more than direct completion in the main thread; state the concrete handoff-cost or scope reason before proceeding. Before deeper exploration, tell the user which slices will be delegated and which decisions stay with the manager; use `references/routing-guide.md` for examples.
 3. Keep architecture, ambiguous tradeoffs, security judgments, conflict decisions, and acceptance with the main agent. Workers may gather safe evidence and implement an approved design within their route's boundary.
 4. Sequential work can still be delegated. Parallelize only independent slices with non-overlapping ownership and independent acceptance; stabilize shared interfaces before consumers start.
 5. Read `references/routing-guide.md` for route selection and recovery limits, `references/task-packet.md` for dispatch, and `references/worker-receipt.md` for evidence and task-level usage. Do not start workers merely because the skill triggered.
