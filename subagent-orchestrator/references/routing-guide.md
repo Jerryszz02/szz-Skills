@@ -11,6 +11,15 @@ Optimize main-model work and successful task completion. Delegation can reduce m
 | Mechanical integration and final combined-workspace checks | Luna → Terra → main manager | Explicit exception to execution order; serialize writes and use the actual target workspace. |
 | Architecture, ambiguous debugging decisions, security judgments, semantic conflicts, final acceptance | Main manager | Delegate safe evidence gathering; retain decisions. External exclusions still apply to implementation. |
 
+## Applying the Gate
+
+- A release-readiness assessment can assign rule/test coverage, runtime performance, and build/resource evidence as bounded scouting slices. The manager defines release criteria and accepts the findings; it need not read every module before dispatching scouts.
+- For a tiny skill wording correction, the manager can state that reading the relevant instructions, changing two documents, and validating them costs less than a worker handoff. This exception does not extend to unrelated implementation discovered later.
+- Sequential dependencies alone do not justify keeping all execution in the main thread. Dispatch the next bounded slice after its inputs are ready. A dirty workspace excludes external HEAD-only routes for affected slices, not all permitted native work.
+- Before substantial work, give a concise routing update: slices, worker route or concrete manager-only reason, and manager-owned decisions. When dispatch succeeds, identify the native agent ID or external runner artifact directory. A plan to dispatch is not evidence that a worker ran; report blocked routes and any manager takeover explicitly.
+
+Skill discovery and text instructions are not runtime enforcement. If the skill is missing from the session, stale, or restricted by higher-priority instructions, stronger wording in this file cannot force dispatch. Check the loaded skill path/version and current tool permissions before diagnosing a routing failure; reload the skill registry after installation updates.
+
 ## Availability and Context
 
 1. For execution, try DeepSeek first: confirm `dsh` is executable, `dsh --profile headless --help` succeeds, the packet passes runner preflight, and the data/task is permitted for that provider. Use `scripts/run-dsh-worker.sh`.
