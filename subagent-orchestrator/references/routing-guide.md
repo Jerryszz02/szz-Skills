@@ -7,9 +7,10 @@ Optimize main-model work and successful task completion. Delegation can reduce m
 | Task shape | Route | Constraints |
 | --- | --- | --- |
 | Known small edit, short supplied-code explanation, bounded deterministic check | Main manager | No ceremonial worker; stop direct diagnosis when exploration grows. |
-| Read-only exploration, review, evidence, failure analysis | Luna (`low`) only | Compact read-only packet; no source writes, external provider or Terra fallback. |
-| Source-writing implementation, tests, fixes, documentation | DeepSeek → Kimi → Luna → Terra | Bounded write ownership and acceptance; native writers use `medium`. |
-| Patch application and mechanical integration | Luna (`medium`) → Terra (`medium`) → main manager | Serialize writes in the actual target workspace. |
+| Bounded text/code scouting, call tracing, log extraction, specified verification | Spark (`medium`) → Luna (`low`) → manager | Apply `spark-worker.md`; compact read-only packet, no source writes or external/Terra fallback. |
+| Broader read-only review or failure analysis | Luna (`low`) → manager | Evidence only; manager owns uncertain diagnosis and risk decisions. |
+| Source-writing implementation, tests, fixes, documentation | DeepSeek → Kimi → Spark → Luna → Terra | DeepSeek stays first; Spark needs a fully specified small slice. Native writers use `medium`. |
+| Patch application and mechanical integration | Spark (`medium`) → Luna (`medium`) → Terra (`medium`) → main manager | Skip Spark unless fully specified and mechanical; serialize writes in the target workspace. |
 | Architecture, risk judgments, semantic conflicts, final acceptance | Main manager | Delegate evidence gathering; retain decisions. |
 
 ## Applying the Gate
@@ -24,10 +25,10 @@ Skill discovery and text instructions are not runtime enforcement. Check the loa
 
 ## Availability and Context
 
-1. Read-only work is fixed to native Luna with `low`; use `read-only-worker.md`, without probing external providers. If Luna or the required native behavior is unavailable, use the manager. A targeted Luna retry must fit the recovery budget; do not upgrade the model/effort to recover read-only work.
+1. Apply `spark-worker.md` before selecting Spark: bounded read-only evidence uses Spark (`medium`) → Luna (`low`) → manager; broader analysis starts at Luna. Use `read-only-worker.md` without external provider probing. Check support in the active dispatch tool, not the main-task model picker. Skip unsupported models/efforts with a reason; do not invent aliases or bypass restrictions through a new task, CLI, or custom config.
 2. For source-writing execution, confirm `dsh` is executable, `dsh --profile headless --help` succeeds, external boundaries below are satisfied, and the packet passes preflight. Then use `scripts/run-dsh-worker.sh`. DeepSeek/Kimi retain their configured provider reasoning settings; native `low`/`medium` tiers do not apply to external CLIs.
-3. If DeepSeek is unavailable or fails, use Kimi when permitted through `scripts/run-kimi-worker.sh`, then native Luna and Terra (`medium`) within budget. Check actual tool callability, not just catalog entries. Record skipped-route reasons.
-4. Patch integration starts at Luna (`medium`). External runners start from committed HEAD and cannot verify uncommitted integrated changes. Confirm native access to the target; otherwise the manager integrates there. Verification-only analysis uses Luna (`low`), while a writer can run its own relevant checks.
+3. If DeepSeek is unavailable or fails, use Kimi when permitted through `scripts/run-kimi-worker.sh`, then native Spark, Luna and Terra (`medium`) within budget. Skip Spark if its eligibility or runtime gate fails; missing native support never moves it ahead of DeepSeek/Kimi. Check actual tool callability, not just catalog entries. Record skipped-route reasons.
+4. Fully specified mechanical patch integration starts at eligible Spark (`medium`), otherwise Luna (`medium`), then Terra and manager. External runners start from committed HEAD and cannot verify uncommitted integrated changes. Confirm native access to the target; otherwise the manager integrates there. Verification-only work uses the read-only route, while a writer can run its own relevant checks.
 5. Record observed model evidence separately from requested aliases. Never inherit full parent history or use Sol.
 
 ## External Worker Boundary
@@ -60,7 +61,7 @@ Defaults for one user task, unless the user explicitly sets a different budget:
 
 - At most **3 execution attempts per slice**, across all providers and native workers.
 - At most **2 recovery attempts for the whole task**, shared across execution, integration, and verification slices. A recovery is any worker attempt after that slice's initial attempt, including provider fallback after execution failure and corrective follow-ups to an existing worker. Use stable slice IDs; renaming or splitting failed work does not reset its recovery count.
-- At most **1 targeted retry on the same route**. Use it only for a precise, fixable failure; otherwise advance through the role's fallback order if one exists; read-only work returns to the manager. Both limits above still apply.
+- At most **1 targeted retry on the same route**. Use it only for a precise, fixable failure; otherwise advance through the role's fallback order if one exists; read-only Spark may fall back to Luna, then returns to the manager. Both limits above still apply.
 - Missing executables, denied dispatch, and preflight failures before model execution do not consume execution attempts. Once model execution starts, its failure and token cost count, even when no receipt is recoverable. Unknown launch state is conservatively counted.
 - When either limit is exhausted, stop worker recovery and return the unresolved criterion to the main manager. The manager may complete a bounded fix directly or report a real blocker; it must not launch a fresh worker loop under a new name.
 

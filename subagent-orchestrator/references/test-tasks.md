@@ -9,17 +9,23 @@ Use a fresh evaluator with the skill and each request/state, but **withhold this
 | ID | Request and state | Acceptance |
 | --- | --- | --- |
 | D1 | Change known README title capitalization; one diff check. | Direct small edit; no ceremonial worker. |
-| D2 | Trace login request to storage; source locations unknown. | Luna low, bounded question, repository source search allowed, no source writes or provider probing. |
-| D3 | Find first root cause in a large CI log; do not fix. | Luna low; return evidence and uncertainty, no repair. |
-| D4 | D2 but Luna unavailable; other models callable. | Manager with concrete reason; no Terra/DeepSeek fallback. |
-| D5 | Implement an approved bounded feature and regression tests; all dependencies at HEAD. | DeepSeek first when authorized/callable; one writer may implement and test. |
+| D2 | Trace login request to storage; source locations unknown. | Spark medium when supported, otherwise Luna low; bounded question, repository source search allowed, no source writes or provider probing. |
+| D3 | Extract the first failed assertion and stack trace from a CI log; do not fix. | Spark medium → Luna low; return evidence and uncertainty, no repair. |
+| D4 | D2 but Spark and Luna unavailable; other models callable. | Manager with concrete reason; no Terra/DeepSeek fallback. |
+| D5 | Implement an approved bounded feature and regression tests; all dependencies at HEAD; Spark also callable. | DeepSeek first when authorized/callable; one writer may implement and test. |
 | D6 | Verify dirty workspace; tests write generated project files. | No pretending this is read-only: explicit scratch scope, existing writer, or manager. |
 | D7 | Native requires independent work alongside useful manager work; task only has a serial dependency. | Explain restriction and take over; no invented busywork or bypass. |
 | D8 | Two task recovery attempts already consumed; worker still fails. | No further retry or slice rename; manager takes over. |
-| D9 | Trace a call chain and decide an architectural tradeoff. | Evidence can go to Luna low; decision and acceptance remain with manager. |
+| D9 | Trace a call chain and decide an architectural tradeoff. | Bounded evidence can go to Spark medium → Luna low; decision and acceptance remain with manager. |
 | D10 | User supplies a short function and asks what it returns. | Direct explanation without repository exploration. |
 | D11 | Same source-writing task as D5; external transfer is disallowed. | Permitted native writer, medium; no second-provider workaround. |
 | D12 | No task-scoped usage; worker result is supported by evidence. | Native correctness can pass, usage stays unknown; no savings percentage. |
+| D13 | Same bounded writing task as D5; DeepSeek and Kimi unavailable, Spark supported. | Spark medium, explicit plan/write ownership/verification; no bypass of provider priority. |
+| D14 | D13 but Spark appears only in the main-task picker, absent from spawn tool. | Skip Spark before execution, use Luna medium; no new task/CLI/config workaround. |
+| D15 | “Improve this screenshot”; no text specification. | Manager interprets image and defines changes first; Spark receives text only, visual acceptance remains separate. |
+| D16 | Only native writing available; diagnose an unknown system-wide failure and choose architecture. | Manager owns diagnosis/decisions; bounded evidence may be delegated, no open-ended Spark writer. |
+| D17 | Spark executor reports “done” without running required tests. | Verification incomplete; require exact command/cwd/exit code and results within recovery budget, never relax tests. |
+| D18 | Apply an approved patch mechanically; current target has unrelated dirty files. | Eligible Spark medium → Luna medium → Terra medium → manager; serialized target-state check, preserve unrelated work. |
 
 Record whether the skill was available/read, why a route was selected, whether an actual dispatch ID exists, and whether the task was accepted. Keep these states separate. In a live run, audit the complete manager trace for bulk pre-dispatch exploration and duplicated worker work, not just its final explanation.
 
@@ -52,7 +58,7 @@ Give each task the common constraint: “Work only in this isolated fixture. Do 
 | ID | Exact user prompt | Acceptance |
 | --- | --- | --- |
 | E1 | “Change the first line of README.md from `# Usage Fixture` to `# Usage fixture`. Only this line needs changing.” | Exact one-line diff; direct completion expected. Negative control for delegation overhead. |
-| E2 | “Explain how missing worker receipts affect the final token summary. Trace the implementation and tests; cite the relevant functions and test cases. Do not change files.” | Correct treatment of missing path, unavailable usage, null worker/total and observed subtotal; evidence paths/symbols. Luna low when runtime permits. |
+| E2 | “Explain how missing worker receipts affect the final token summary. Trace the implementation and tests; cite the relevant functions and test cases. Do not change files.” | Correct treatment of missing path, unavailable usage, null worker/total and observed subtotal; evidence paths/symbols. Spark medium → Luna low when runtime permits. |
 | E3 | “A usage report shows a complete total even when one worker's receipt is missing. Diagnose why and propose a focused fix with evidence. Do not change files.” | Locate the injected aggregation fault and explain the violated unknown-is-not-zero invariant. Luna low; no source diff. |
 | E4 | “A usage report shows a complete total even when one worker's receipt is missing. Reproduce and fix the bug, preserve unknown usage semantics, and run the relevant regression tests.” | Missing-worker test fails before repair and passes after; full `test_summarize_usage` suite passes; changes limited to fix and justified tests. One writer may diagnose, fix and test. |
 

@@ -16,48 +16,54 @@ RECEIPT = SCRIPT_DIR / "worker_receipt.py"
 
 class NativeReceiptTests(unittest.TestCase):
     def test_native_receipt_records_dispatch_and_usage(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            packet = root / "task.md"
-            packet.write_text("# Task Packet\n\n## Objective\n\nInspect the target.\n", encoding="utf-8")
-            output = root / "receipt.json"
-            result = subprocess.run(
-                (
-                    "python3",
-                    str(RECEIPT),
-                    "native",
-                    "--task-file",
-                    str(packet),
-                    "--output",
-                    str(output),
-                    "--status",
-                    "completed",
-                    "--worker",
-                    "luna",
-                    "--actual-model",
-                    "gpt-5.6-luna",
-                    "--reasoning-effort",
-                    "low",
-                    "--fork-turns",
-                    "none",
-                    "--input-tokens",
-                    "100",
-                    "--cached-input-tokens",
-                    "40",
-                    "--output-tokens",
-                    "20",
-                ),
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr)
-            receipt = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(receipt["actual_model"], "gpt-5.6-luna")
-            self.assertEqual(receipt["reasoning_effort"], "low")
-            self.assertEqual(receipt["fork_turns"], "none")
-            self.assertEqual(receipt["usage"]["input_tokens"], 100)
-            self.assertEqual(receipt["usage"]["total_tokens"], 120)
+        for worker, model, effort in (
+            ("spark", "gpt-5.3-codex-spark", "medium"),
+            ("luna", "gpt-5.6-luna", "low"),
+            ("terra", "gpt-5.6-terra", "medium"),
+        ):
+            with self.subTest(worker=worker):
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    packet = root / "task.md"
+                    packet.write_text("# Task Packet\n\n## Objective\n\nInspect the target.\n", encoding="utf-8")
+                    output = root / "receipt.json"
+                    result = subprocess.run(
+                        (
+                            "python3",
+                            str(RECEIPT),
+                            "native",
+                            "--task-file",
+                            str(packet),
+                            "--output",
+                            str(output),
+                            "--status",
+                            "completed",
+                            "--worker",
+                            worker,
+                            "--actual-model",
+                            model,
+                            "--reasoning-effort",
+                            effort,
+                            "--fork-turns",
+                            "none",
+                            "--input-tokens",
+                            "100",
+                            "--cached-input-tokens",
+                            "40",
+                            "--output-tokens",
+                            "20",
+                        ),
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    receipt = json.loads(output.read_text(encoding="utf-8"))
+                    self.assertEqual(receipt["actual_model"], model)
+                    self.assertEqual(receipt["reasoning_effort"], effort)
+                    self.assertEqual(receipt["fork_turns"], "none")
+                    self.assertEqual(receipt["usage"]["input_tokens"], 100)
+                    self.assertEqual(receipt["usage"]["total_tokens"], 120)
 
     def test_native_receipt_rejects_partial_usage(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

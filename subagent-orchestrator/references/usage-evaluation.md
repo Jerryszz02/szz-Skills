@@ -23,12 +23,13 @@ For a meaningful change to routing, use an isolated fixture and an independent p
 | Fixture | Expected behavior |
 | --- | --- |
 | One trivial wording correction | Direct completion when delegation costs more; brief reason. |
-| Read-only discovery/review/failure analysis; Luna permitted and callable | Luna low, compact packet, no external probing. |
-| Read-only work; Luna unavailable but Terra/DeepSeek callable | Manager takeover with reason; no model fallback. |
+| Bounded text/code evidence; Spark and Luna callable | Spark medium, compact packet, no external probing. |
+| Read-only work; Spark and Luna unavailable but Terra/DeepSeek callable | Manager takeover with reason; no Terra/provider fallback. |
 | Bounded source-writing implementation; all routes permitted and callable | DeepSeek first, with only required context. |
 | Source-writing work; DeepSeek unavailable before execution, Kimi callable | Kimi; preflight skip consumes no model execution. |
 | Source-writing work; external data transfer disallowed | Permitted native writing route; no workaround via another provider. |
-| Approved patches plus unrelated uncommitted edits | Luna integration in target workspace, preserve unrelated edits, check combined state. |
+| Approved patches plus unrelated uncommitted edits | Eligible Spark medium, otherwise Luna medium, integration in target workspace, preserve unrelated edits, check combined state. |
+| Spark appears in the main-task picker but not the active spawn tool | Skip it before execution; preserve DeepSeek/Kimi priority for writing and use role fallback. |
 | Two failures already consumed the whole task's recovery allowance | No further worker recovery, even if another provider remains available. |
 | Worker says tests passed but lacks command/cwd/results | Request evidence; do not accept the summary as verification. |
 | Native tool requires independent work; only a serial dependency remains | State restriction; do not manufacture parallel work or bypass the same restriction. |

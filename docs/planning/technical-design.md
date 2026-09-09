@@ -2,27 +2,30 @@
 
 ## 目标
 
-把“是否委派”和“委派给谁”拆成两个顺序决策：每个准备调用 `spawn_agent` 的任务先通过 Delegation Gate；通过后按 DeepSeek、Kimi、Luna、Terra 的固定顺序选择 worker，永不使用 Sol worker。
+把“是否委派”和“委派给谁”拆成两个顺序决策：每个准备调用 `spawn_agent` 的任务先通过 Delegation Gate；通过后按角色选择 worker；写入保持 DeepSeek、Kimi、Spark、Luna、Terra 的顺序，永不使用 Sol worker。
 
 ## 调度契约
 
 1. 根/主 Agent 识别依赖、ownership、验收命令和风险。
 2. 小型、强耦合、顺序依赖、高风险或直接完成更便宜的任务不委派。
-3. 外部 worker 依次尝试 DeepSeek 和 Kimi；两者均不能使用时才尝试原生 Luna、Terra。
+3. 外部 worker 依次尝试 DeepSeek 和 Kimi；两者均不能使用时才尝试原生 Spark、Luna、Terra；Spark 只接明确方案的小块任务。
 4. 只有根/主 Agent 可以调用 `spawn_agent`。调用前通过 `list_agents` 读取实时占用，并根据当前 runtime 的并发上限计算剩余位。
-5. 原生 worker 显式设置模型和推理强度；scout 使用 low，builder 使用 medium；`fork_turns` 使用 `none`，完整上下文由 task packet 提供。
+5. 原生 worker 显式设置模型和推理强度；Spark 使用 medium，Luna 只读使用 low，原生写入使用 medium；`fork_turns` 使用 `none`，完整上下文由 task packet 提供。
 6. 每份 task packet 都要求 `Nested delegation: forbidden`，禁止 worker 调用 `spawn_agent` 或继续委派。
 7. 主 Agent 审查输出、diff 和验证结果，负责集成与最终验收。
 8. 所有 worker 使用同一 receipt schema，记录任务、实际模型、推理档位、fork 范围、状态和 runtime token。
 
-## 固定 fallback
+## 写入 fallback
 
 | 顺序 | Worker | 可用性与调用要求 |
 | --- | --- | --- |
 | 1 | DeepSeek Harness | `dsh` 可执行，`dsh --profile headless --help` 成功，任务通过外部 worker 安全边界与 runner preflight。 |
 | 2 | Kimi Code | `kimi` 可执行，任务通过相同安全和 packet 边界。 |
-| 3 | Luna | `model="gpt-5.6-luna"`；scout `reasoning_effort="low"`，builder `"medium"`。 |
-| 4 | Terra | `model="gpt-5.6-terra"`；scout `reasoning_effort="low"`，builder `"medium"`。 |
+| 3 | Spark | `model="gpt-5.3-codex-spark"`；`reasoning_effort="medium"`；任务符合 Spark 边界且当前 spawn 工具支持，否则跳过。 |
+| 4 | Luna | `model="gpt-5.6-luna"`；写入 `reasoning_effort="medium"`。 |
+| 5 | Terra | `model="gpt-5.6-terra"`；写入 `reasoning_effort="medium"`。 |
+
+定向只读取证使用 Spark medium → Luna low → 主 Agent；更广泛的只读分析保持 Luna low → 主 Agent。完全明确的机械集成使用 Spark medium → Luna medium → Terra medium → 主 Agent。不将主任务模型列表当作 subagent 可用性证明。详细边界见 [Spark worker](../../subagent-orchestrator/references/spark-worker.md)。
 
 原生 spawn 同时设置 `fork_turns="none"`。如果没有剩余并发位，不调用 `spawn_agent`，而是等待、排队或由主 Agent 完成。
 

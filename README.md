@@ -10,7 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制研究景点或餐厅，生成审核清单，并在批准后保存到 Google Maps | “研究京都景点”“推荐成都餐厅”“把审核清单加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
-| `subagent-orchestrator` | 可用 | 主模型规划验收，只读 Luna low，写入 DeepSeek 优先，并汇总任务用量 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
+| `subagent-orchestrator` | 可用 | 主模型规划验收，定向只读 Spark 优先，写入 DeepSeek 优先，并汇总任务用量 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
 
 ## How This Repository Works
 
@@ -213,16 +213,15 @@ python3 -m unittest test_score_candidates.py
 
 `subagent-orchestrator` 让主模型（选用 GPT-6 时即 GPT-6）默认负责需求、规划、关键决策和最终验收，保留已知小改动、短代码解释、输出可控的确定性检查直做及失败接管。读取规则和 Git 状态后，最多做两轮小范围定向定位；若仍需持续探索或诊断，则在深入读取前委派。这是待评估的策略门槛，不是已测得的 token 盈亏点。
 
-**只读探索、review、证据收集和失败日志分析固定使用原生 Luna（`low`、`fork_turns: "none"`）**，不探测外部 provider、不回退 Terra。Luna 不可用或达到恢复上限时由主 Agent 接管。只读 packet 允许在位置未知时搜索仓库源码，但禁止源码写入，排除 secrets、私密会话和无关生成目录。
+**定向只读取证使用 Spark（medium）→ Luna（low）→ 主 Agent**；更广泛的只读 review 和失败分析保持 Luna low → 主 Agent，不探测外部 provider、不回退 Terra。只读 packet 返回文件路径、函数与行号、简短调用关系、证据和未确认问题，禁止源码写入。
 
-涉及写入的实现、修复、测试代码和文档按以下顺序委派：
+涉及写入的实现、修复、测试代码和文档保持 **DeepSeek → Kimi → Spark → Luna → Terra**，DeepSeek 第一优先级不变。前两者仍通过已配置的 CLI 在 detached worktree 中执行；原生写入使用 medium。Spark 只负责主 Agent 已明确方案、边界和验收的小块任务；不适用时跳过。
 
-- DeepSeek：通过已配置的 `dsh --profile headless`，在 detached Git worktree 中执行。
-- Kimi Code：DeepSeek 不可用或失败时的第二选择，同样在 detached worktree 中执行。
-- Luna：外部 worker 都不能使用时的首个原生选择；显式指定模型和推理强度。
-- Terra：最后一个 worker 回退；显式指定模型和推理强度。
+[Spark 任务边界](subagent-orchestrator/references/spark-worker.md)覆盖定向读代码、已知原因的小修复、明确文字要求的 UI 调整、小函数、重复维护和指定测试/日志整理。架构、未知根因的判断、关键业务规则和最终验收由主 Agent 负责。测试任务必须明确命令、cwd 和预期结果，不能删测试或放宽断言来跑绿；图片先由主 Agent 转为文字要求，界面效果另行查看验收。
 
-补丁应用和机械集成使用 **Luna（medium）→ Terra（medium）→ 主 Agent**。独立的只读验证使用 Luna low；实现 worker 可以自己运行相关测试，不要求再创建 verifier。会改写项目文件的测试不能冒充只读任务，需使用明确允许的隔离副本、现有执行 worker 或主 Agent。这基于原生 worker 能访问当前工作区的条件；外部 runner 仅从已提交的 HEAD 启动，不能验证尚未提交的集成结果。主 Agent 先审查并授权具体 patch，worker 再串行应用并检查，语义冲突和验收结论仍由主 Agent 决定。
+**主任务里能选 Spark，不代表当前 subagent 工具支持 Spark。** 每次调用检查准确模型 `gpt-5.3-codex-spark` 和 medium 是否可用；不支持时记录原因并跳过，不创建新任务、CLI 或自定义配置来绕过。所有原生 worker 使用 `fork_turns: "none"`。
+
+完全明确的补丁应用和机械集成使用 **Spark（medium）→ Luna（medium）→ Terra（medium）→ 主 Agent**；Spark 不适用时跳过。独立验证走只读路线，实现 worker 可以运行自己的相关测试。会改写项目文件的测试需使用明确允许的隔离副本、现有执行 worker 或主 Agent。集成必须检查实际目标工作区的未提交状态；外部 runner 仅从已提交的 HEAD 启动。主 Agent 先审查具体 patch，再串行应用；语义冲突返回主 Agent。
 
 默认每个切片最多 3 次执行、每项用户任务共享最多 2 次恢复尝试，同一路线最多定向重试 1 次；达到任一上限后由主 Agent 接管。闸门检查失败且模型未启动不计执行，执行后失败和缺失用量必须记账。这些是主 Agent 的编排规则，单次 runner 不会自动强制跨 worker 预算。
 
@@ -232,7 +231,7 @@ python3 -m unittest test_score_candidates.py
 
 ### 怎么用
 
-跨项目启用策略时，手动复制 [简短英文全局策略](subagent-orchestrator/references/global-policy.md) 到全局 AGENTS.md。技能同步不会修改全局指令。只读任务使用 [轻量 Luna packet](subagent-orchestrator/references/read-only-worker.md)，不走以下外部命令。
+跨项目启用策略时，手动复制 [简短英文全局策略](subagent-orchestrator/references/global-policy.md) 到全局 AGENTS.md。技能同步不会修改全局指令。只读任务使用 [轻量原生只读 packet](subagent-orchestrator/references/read-only-worker.md)，不走以下外部命令。
 
 DeepSeek 写入 worker：
 

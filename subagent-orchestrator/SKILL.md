@@ -17,11 +17,11 @@ Use one cohesive responsibility per worker and reuse accepted evidence. Scout, e
 
 ## Select the Route
 
-- **Read-only exploration, review, evidence and failure-log analysis:** fixed native `gpt-5.6-luna`, `reasoning_effort: "low"`, `fork_turns: "none"`. Read [read-only-worker.md](references/read-only-worker.md). No provider or Terra fallback; if unavailable or unsuccessful after bounded recovery, the manager takes over.
-- **Source-writing implementation, fixes, tests and documentation:** **DeepSeek → Kimi → Luna → Terra**. Native writing uses `medium`. Read [routing-guide.md](references/routing-guide.md) and the external or native-writing section of [task-packet.md](references/task-packet.md).
-- **Patch application and mechanical integration:** **Luna (`medium`) → Terra (`medium`) → manager**, in the actual target workspace. Read the integration contract in [routing-guide.md](references/routing-guide.md). Verification-only work uses the read-only route; an executor may run its own relevant tests without a new worker.
+- **Read-only work:** bounded text/code evidence uses **Spark (`medium`) → Luna (`low`) → manager**; broader review/failure analysis stays Luna (`low`) → manager. Read [spark-worker.md](references/spark-worker.md) for eligibility and [read-only-worker.md](references/read-only-worker.md) for the packet. No external provider or Terra fallback.
+- **Source-writing implementation, fixes, tests and documentation:** **DeepSeek → Kimi → Spark → Luna → Terra**; keep DeepSeek first. Spark is only for an explicit, bounded plan and is skipped otherwise. Native writing uses `medium`. Read [routing-guide.md](references/routing-guide.md) and the external or native-writing section of [task-packet.md](references/task-packet.md).
+- **Patch application and mechanical integration:** **Spark (`medium`) → Luna (`medium`) → Terra (`medium`) → manager**, in the actual target workspace. Skip Spark unless integration is fully specified and mechanical. Read the integration contract in [routing-guide.md](references/routing-guide.md). Verification-only work uses the read-only route; an executor may run its own relevant tests without a new worker.
 
-Immediately before every native spawn, call `list_agents`, check the live tool's restrictions and remaining capacity, and queue if full. Pass explicit model, effort, `fork_turns: "none"`, and the route's packet. Do not create custom agent/config files.
+Immediately before every native spawn, call `list_agents`, check the live tool's supported models/efforts, restrictions and remaining capacity, and queue if full. Pass explicit model, effort, `fork_turns: "none"`, and the route's packet. Do not create custom agent/config files.
 
 ## Accept and Account
 

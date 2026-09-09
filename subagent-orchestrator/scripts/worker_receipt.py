@@ -272,7 +272,7 @@ def main() -> int:
 
     native = subparsers.add_parser("native")
     common(native)
-    native.add_argument("--worker", choices=("luna", "terra"), required=True)
+    native.add_argument("--worker", choices=("spark", "luna", "terra"), required=True)
     native.add_argument("--actual-model", required=True)
     native.add_argument("--reasoning-effort", required=True)
     native.add_argument("--fork-turns", required=True)
