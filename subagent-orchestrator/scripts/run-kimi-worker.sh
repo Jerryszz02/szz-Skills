@@ -5,7 +5,12 @@ cwd=""
 task_file=""
 output_dir=""
 model=""
-kimi_bin="${KIMI_BIN:-kimi}"
+kimi_bin=""
+slice_id=""
+attempt=1
+route_stage="preflight"
+route_reason="preflight_failed"
+execution_state="not_started"
 run_root=""
 worktree=""
 worktree_registered=0
@@ -13,7 +18,7 @@ artifacts_complete=0
 
 usage() {
   cat <<'USAGE'
-Usage: run-kimi-worker.sh --cwd /absolute/project --task-file /absolute/task.md --output-dir /absolute/artifacts [--model MODEL]
+Usage: run-kimi-worker.sh --cwd /absolute/project --task-file /absolute/task.md --output-dir /absolute/artifacts [--slice-id ID] [--attempt N] [--model MODEL]
 USAGE
 }
 
@@ -22,6 +27,8 @@ while [[ $# -gt 0 ]]; do
     --cwd) cwd="${2:-}"; shift 2 ;;
     --task-file) task_file="${2:-}"; shift 2 ;;
     --output-dir) output_dir="${2:-}"; shift 2 ;;
+    --slice-id) slice_id="${2:-}"; shift 2 ;;
+    --attempt) attempt="${2:-}"; shift 2 ;;
     --model) model="${2:-}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 64 ;;
@@ -36,25 +43,14 @@ if [[ "$cwd" != /* || "$task_file" != /* || "$output_dir" != /* ]]; then
   echo "--cwd, --task-file, and --output-dir must be absolute paths." >&2
   exit 64
 fi
-if [[ ! -f "$task_file" ]]; then
-  echo "Task file does not exist: $task_file" >&2
-  exit 66
-fi
-if ! command -v "$kimi_bin" >/dev/null 2>&1; then
-  echo "Kimi Code CLI is not installed or is not executable: $kimi_bin" >&2
-  exit 69
-fi
-
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 skill_dir="$(cd -- "$script_dir/.." && pwd -P)"
-python3 "$script_dir/task_packet.py" validate --task-file "$task_file"
 
 if ! repo_root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)"; then
   echo "--cwd is not inside a Git repository: $cwd" >&2
   exit 66
 fi
 repo_root="$(cd -- "$repo_root" && pwd -P)"
-git -C "$repo_root" rev-parse --verify HEAD >/dev/null
 
 mkdir -p "$output_dir"
 output_dir="$(cd -- "$output_dir" && pwd -P)"
@@ -66,6 +62,33 @@ if find "$output_dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
   exit 73
 fi
 
+# Resolve each provider independently; preserve explicit overrides and report skips.
+if ! kimi_bin="$(python3 "$script_dir/route_diagnostics.py" probe \
+  --provider kimi --task-file "$task_file" --output "$output_dir/route.json" \
+  --slice-id "$slice_id" --attempt "$attempt" --print-executable)"; then
+  echo "kimi executable probe failed; see $output_dir/route.json" >&2
+  exit 69
+fi
+finish_route() {
+  local exit_code=$?
+  python3 "$script_dir/route_diagnostics.py" finish --output "$output_dir/route.json" \
+    --stage "$route_stage" --reason "$route_reason" --exit-code "$exit_code" \
+    --execution-state "$execution_state" || true
+  if [[ "$artifacts_complete" -ne 1 && "$worktree_registered" -eq 1 ]]; then
+    echo "Worker worktree retained for recovery: $worktree" >&2
+  fi
+  echo "Route diagnostics: $output_dir/route.json" >&2
+  exit "$exit_code"
+}
+trap finish_route EXIT
+route_reason="task_file_missing"
+[[ -f "$task_file" ]] || exit 66
+route_reason="task_packet_invalid"
+python3 "$script_dir/task_packet.py" validate --task-file "$task_file"
+route_reason="invalid_head"
+git -C "$repo_root" rev-parse --verify HEAD >/dev/null
+
+route_reason="dirty_overlap"
 preflight_paths="$output_dir/preflight-paths.txt"
 {
   git -C "$repo_root" diff --name-only
@@ -81,15 +104,7 @@ rm -f "$preflight_paths"
 run_root="$(mktemp -d "${TMPDIR:-/tmp}/subagent-orchestrator-kimi.XXXXXX")"
 worktree="$run_root/worktree"
 
-retain_on_failure() {
-  local exit_code=$?
-  if [[ "$artifacts_complete" -ne 1 && "$worktree_registered" -eq 1 ]]; then
-    echo "Kimi worktree retained for recovery: $worktree" >&2
-  fi
-  exit "$exit_code"
-}
-trap retain_on_failure EXIT
-
+route_reason="worktree_setup_failed"
 git -C "$repo_root" worktree add --detach "$worktree" HEAD >/dev/null
 worktree_registered=1
 head_commit="$(git -C "$worktree" rev-parse HEAD)"
@@ -105,6 +120,11 @@ command+=(
   --output-format stream-json
 )
 
+route_stage="execution"
+route_reason="worker_failed"
+execution_state="unknown"
+python3 "$script_dir/route_diagnostics.py" finish --output "$output_dir/route.json" \
+  --stage execution --reason worker_running --exit-code 0 --execution-state unknown >/dev/null
 set +e
 (
   cd "$worktree"
@@ -113,6 +133,8 @@ set +e
 kimi_exit_code=$?
 set -e
 
+route_stage="artifacts"
+route_reason="artifact_collection_failed"
 git -C "$worktree" add -N -- . >/dev/null
 git -C "$worktree" status --short > "$output_dir/status.txt"
 git -C "$worktree" diff --name-only --no-ext-diff "$head_commit" -- | awk 'NF' | sort -u > "$output_dir/changed-paths.txt"
@@ -223,6 +245,7 @@ manifest = {
         "exit-code",
         "scope-check.txt",
         "worker-receipt.json",
+        "route.json",
     ],
 }
 
@@ -232,5 +255,13 @@ with open(manifest_path, "w", encoding="utf-8") as handle:
 PY
 
 artifacts_complete=1
-trap - EXIT
+route_stage="complete"
+route_reason="completed"
+if [[ "$runner_exit_code" -ne 0 ]]; then
+  route_reason="worker_failed"
+  if [[ "$scope_ok" != true ]]; then route_reason="scope_rejected"
+  elif [[ "$worktree_cleaned" != true ]]; then route_reason="cleanup_failed"
+  elif [[ "$kimi_exit_code" -ne 0 ]]; then route_reason="worker_failed"
+  elif [[ "$metadata_complete" != true ]]; then route_reason="metadata_incomplete"; fi
+fi
 exit "$runner_exit_code"
