@@ -1,6 +1,6 @@
 # Task Packet Contract
 
-Use this template for every delegated task. Keep each packet limited to one independently verifiable responsibility. Include stable slice ID, role, attempt number, remaining task recovery budget, and artifact output directory in the Objective or additional sections. These orchestration fields are tracked by the root; the external packet validator only enforces its existing required sections.
+For native read-only tasks, use the compact packet in `read-only-worker.md` instead. Use the following template for external execution and native source-writing tasks. Keep each packet limited to one independently verifiable responsibility. Include stable slice ID, role, attempt number, remaining task recovery budget, and artifact output directory in the Objective or additional sections. These orchestration fields are tracked by the root; the external packet validator only enforces its existing required sections.
 
 ```markdown
 # Task Packet
@@ -72,3 +72,21 @@ The DeepSeek and Kimi runners validate the required headings and path scope, ref
 ## Compact Handoffs
 
 Provide relevant file paths, verified interface decisions, acceptance criteria, and focused failure evidence. Avoid copying whole files or the parent conversation. A scout returns evidence locations and unresolved questions; the manager reads enough cited evidence to decide the plan. Do not make a second worker rediscover accepted findings.
+
+## External Commands
+
+Use a separate empty output directory for each attempt:
+
+```bash
+subagent-orchestrator/scripts/run-dsh-worker.sh \
+  --cwd /absolute/project/path \
+  --task-file /absolute/task-packet.md \
+  --output-dir /absolute/artifact-directory
+
+subagent-orchestrator/scripts/run-kimi-worker.sh \
+  --cwd /absolute/project/path \
+  --task-file /absolute/task-packet.md \
+  --output-dir /absolute/artifact-directory
+```
+
+External workers keep their configured provider reasoning settings; do not assign native `medium` to DeepSeek/Kimi. Kimi uses its configured default model unless the user or current configuration requires `--model <alias>`. Runner failures do not authorize bypassing scope or recovery limits. Read the external boundaries in `routing-guide.md` before dispatch.

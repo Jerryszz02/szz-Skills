@@ -23,12 +23,16 @@ For a meaningful change to routing, use an isolated fixture and an independent p
 | Fixture | Expected behavior |
 | --- | --- |
 | One trivial wording correction | Direct completion when delegation costs more; brief reason. |
-| Bounded code discovery or implementation; all routes permitted and callable | DeepSeek first, with only required context. |
-| DeepSeek unavailable before execution, Kimi callable | Kimi; preflight skip consumes no model execution. |
-| External data transfer disallowed | Permitted native route; no workaround via another provider. |
+| Read-only discovery/review/failure analysis; Luna permitted and callable | Luna low, compact packet, no external probing. |
+| Read-only work; Luna unavailable but Terra/DeepSeek callable | Manager takeover with reason; no model fallback. |
+| Bounded source-writing implementation; all routes permitted and callable | DeepSeek first, with only required context. |
+| Source-writing work; DeepSeek unavailable before execution, Kimi callable | Kimi; preflight skip consumes no model execution. |
+| Source-writing work; external data transfer disallowed | Permitted native writing route; no workaround via another provider. |
 | Approved patches plus unrelated uncommitted edits | Luna integration in target workspace, preserve unrelated edits, check combined state. |
 | Two failures already consumed the whole task's recovery allowance | No further worker recovery, even if another provider remains available. |
 | Worker says tests passed but lacks command/cwd/results | Request evidence; do not accept the summary as verification. |
+| Native tool requires independent work; only a serial dependency remains | State restriction; do not manufacture parallel work or bypass the same restriction. |
+| Verification command writes generated project files | Not read-only; use an allowed scratch copy, existing writer or manager. |
 
 This exercises instructions, not the real execution harness. It uses evaluator tokens, so record it as an evaluation attempt. A forward-test failure supports a focused correction; do not repeat evaluation indefinitely.
 
@@ -93,6 +97,12 @@ Without `--output`, JSON goes to stdout. Outputs:
 - `missing_usage`, per-run model/status/completeness, `worker_attempts`, and `retry_attempts` for audit. Retry count includes provider fallback after execution failure and corrective follow-ups whose attempt is greater than 1.
 
 Malformed inputs and inconsistent totals return a nonzero exit with an error; incomplete telemetry still returns a valid summary. The tool neither enforces recovery budgets nor verifies the supplied acceptance outcome.
+
+## Before Dispatch: Predict Without Fabricating Savings
+
+Prefer delegation when the worker can consume substantial exploration, implementation or logs and return compact verifiable evidence that the manager will not reconstruct. Do not estimate numeric savings per task. Known small edits and bounded checks may cost less directly; the two-batch discovery limit is a starting policy, not an economic measurement. Use the task battery in `test-tasks.md` to calibrate it.
+
+Treat successful acceptance as a prerequisite. Track manager tokens, total tokens, latency and recovery separately; price/quota savings require their own valid accounting. Missing telemetry limits accounting, not native correctness acceptance.
 
 ## Controlled Task Comparison
 
