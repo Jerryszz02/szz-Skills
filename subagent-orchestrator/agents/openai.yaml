@@ -1,6 +1,6 @@
 interface:
   display_name: "Subagent Orchestrator"
-  short_description: "主模型规划验收、DeepSeek 优先执行与 Luna 集成检查"
-  default_prompt: "使用 $subagent-orchestrator 让主模型负责规划与验收，执行按 DeepSeek、Kimi、Luna、Terra 顺序委派，集成检查优先 Luna，并记录任务用量与恢复次数。"
+  short_description: "主模型规划验收，只读固定 Luna low，写入 DeepSeek 优先与原生集成"
+  default_prompt: "使用 $subagent-orchestrator 让主模型负责规划与验收，只读固定 Luna low，写入按 DeepSeek、Kimi、Luna、Terra 顺序委派，集成优先 Luna medium，并记录任务用量与恢复次数。"
 policy:
   allow_implicit_invocation: true

@@ -10,7 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制研究景点或餐厅，生成审核清单，并在批准后保存到 Google Maps | “研究京都景点”“推荐成都餐厅”“把审核清单加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
-| `subagent-orchestrator` | 可用 | 主模型规划验收，DeepSeek 优先执行，Luna 集成检查，并汇总任务用量 | “拆分这个复杂任务”“调用 subagent 前先评估”“用 DeepSeek worker 实现” |
+| `subagent-orchestrator` | 可用 | 主模型规划验收，只读 Luna low，写入 DeepSeek 优先，并汇总任务用量 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
 
 ## How This Repository Works
 
@@ -211,22 +211,30 @@ python3 -m unittest test_score_candidates.py
 
 ### 功能
 
-`subagent-orchestrator` 让主模型（选用 GPT-6 时即 GPT-6）默认负责需求、规划、关键决策和最终验收，保留微小任务直做及失败接管。查代码、收集证据、实现、测试、常规修复和文档按以下顺序委派：
+`subagent-orchestrator` 让主模型（选用 GPT-6 时即 GPT-6）默认负责需求、规划、关键决策和最终验收，保留已知小改动、短代码解释、输出可控的确定性检查直做及失败接管。读取规则和 Git 状态后，最多做两轮小范围定向定位；若仍需持续探索或诊断，则在深入读取前委派。这是待评估的策略门槛，不是已测得的 token 盈亏点。
+
+**只读探索、review、证据收集和失败日志分析固定使用原生 Luna（`low`、`fork_turns: "none"`）**，不探测外部 provider、不回退 Terra。Luna 不可用或达到恢复上限时由主 Agent 接管。只读 packet 允许在位置未知时搜索仓库源码，但禁止源码写入，排除 secrets、私密会话和无关生成目录。
+
+涉及写入的实现、修复、测试代码和文档按以下顺序委派：
 
 - DeepSeek：通过已配置的 `dsh --profile headless`，在 detached Git worktree 中执行。
 - Kimi Code：DeepSeek 不可用或失败时的第二选择，同样在 detached worktree 中执行。
 - Luna：外部 worker 都不能使用时的首个原生选择；显式指定模型和推理强度。
 - Terra：最后一个 worker 回退；显式指定模型和推理强度。
 
-集成操作和最终组合工作区检查单独使用 **Luna → Terra → 主 Agent**。这基于原生 worker 能访问当前工作区的条件；外部 runner 仅从已提交的 HEAD 启动，不能验证尚未提交的集成结果。主 Agent 先审查并授权具体 patch，worker 再串行应用并检查，语义冲突和验收结论仍由主 Agent 决定。
+补丁应用和机械集成使用 **Luna（medium）→ Terra（medium）→ 主 Agent**。独立的只读验证使用 Luna low；实现 worker 可以自己运行相关测试，不要求再创建 verifier。会改写项目文件的测试不能冒充只读任务，需使用明确允许的隔离副本、现有执行 worker 或主 Agent。这基于原生 worker 能访问当前工作区的条件；外部 runner 仅从已提交的 HEAD 启动，不能验证尚未提交的集成结果。主 Agent 先审查并授权具体 patch，worker 再串行应用并检查，语义冲突和验收结论仍由主 Agent 决定。
 
 默认每个切片最多 3 次执行、每项用户任务共享最多 2 次恢复尝试，同一路线最多定向重试 1 次；达到任一上限后由主 Agent 接管。闸门检查失败且模型未启动不计执行，执行后失败和缺失用量必须记账。这些是主 Agent 的编排规则，单次 runner 不会自动强制跨 worker 预算。
 
 不会使用 Sol worker。只有根/主 Agent 可以调用 `spawn_agent`；每份 task packet 都明确禁止 worker 再委派。原生 spawn 前必须检查当前剩余并发位，且调用中必须填写 `model`、`reasoning_effort` 和 `fork_turns: "none"`。
 
+角色不要求拆成三个 worker：一个写入 worker 可以完成实现与相关测试，复用已有证据；主 Agent 只检查关键证据、实际 diff 和验收结果。原生工具若要求存在可并行的独立主工作，必须满足该要求；不满足时说明限制并接管。
+
 ### 怎么用
 
-DeepSeek worker：
+跨项目启用策略时，手动复制 [简短英文全局策略](subagent-orchestrator/references/global-policy.md) 到全局 AGENTS.md。技能同步不会修改全局指令。只读任务使用 [轻量 Luna packet](subagent-orchestrator/references/read-only-worker.md)，不走以下外部命令。
+
+DeepSeek 写入 worker：
 
 ```bash
 subagent-orchestrator/scripts/run-dsh-worker.sh \
@@ -246,7 +254,7 @@ subagent-orchestrator/scripts/run-kimi-worker.sh \
 
 ### 边界
 
-- 委派必须有界、可验证；存在依赖时可以串行委派。架构、安全判断、语义冲突和最终验收留在主 Agent；外部 worker 继续排除认证、支付、迁移和破坏性操作。
+- 委派必须有界、可验证；存在依赖时仅在运行环境允许的情况下串行委派。架构、安全判断、语义冲突和最终验收留在主 Agent；外部 worker 继续排除认证、支付、迁移和破坏性操作。
 - DeepSeek 与 Kimi worktree 只是 Git 冲突隔离，不是操作系统安全沙箱，不得传递 secrets、Cookie、私钥、`.env` 值或私密会话。
 - runner 不创建分支或 commit，也不自动应用 patch。主 Agent 必须检查 manifest、scope、实际 diff 和验证结果。
 - 如果允许路径存在主工作区未提交改动，外部 runner 会拒绝启动；无关脏文件不会阻止执行。
@@ -254,7 +262,7 @@ subagent-orchestrator/scripts/run-kimi-worker.sh \
 
 ### 验证与用量
 
-离线回归检查（不调用模型）及真实任务对照方法见 [用量与验证指南](subagent-orchestrator/references/usage-evaluation.md)。主/native 用量和任务 manifest 需按运行时证据记录；工具不会自动从账户额度推算 token。
+可复制的测试任务和验收标准见 [测试任务](subagent-orchestrator/references/test-tasks.md)。离线回归检查（不调用模型）及真实任务对照方法见 [用量与验证指南](subagent-orchestrator/references/usage-evaluation.md)。主/native 用量和任务 manifest 需按运行时证据记录；工具不会自动从账户额度推算 token。
 
 ```bash
 python3 -m unittest discover -s subagent-orchestrator/scripts -p 'test_*.py' -v

@@ -6,28 +6,37 @@ Optimize main-model work and successful task completion. Delegation can reduce m
 
 | Task shape | Route | Constraints |
 | --- | --- | --- |
-| Tiny edit or handoff more expensive than direct work | Main manager | Briefly record the reason; no ceremonial worker. |
-| Code discovery, evidence, implementation, tests, routine fixes, documentation | DeepSeek → Kimi → Luna → Terra | Bounded ownership and acceptance; follow dependencies sequentially when needed. |
-| Mechanical integration and final combined-workspace checks | Luna → Terra → main manager | Explicit exception to execution order; serialize writes and use the actual target workspace. |
-| Architecture, ambiguous debugging decisions, security judgments, semantic conflicts, final acceptance | Main manager | Delegate safe evidence gathering; retain decisions. External exclusions still apply to implementation. |
+| Known small edit, short supplied-code explanation, bounded deterministic check | Main manager | No ceremonial worker; stop direct diagnosis when exploration grows. |
+| Read-only exploration, review, evidence, failure analysis | Luna (`low`) only | Compact read-only packet; no source writes, external provider or Terra fallback. |
+| Source-writing implementation, tests, fixes, documentation | DeepSeek → Kimi → Luna → Terra | Bounded write ownership and acceptance; native writers use `medium`. |
+| Patch application and mechanical integration | Luna (`medium`) → Terra (`medium`) → main manager | Serialize writes in the actual target workspace. |
+| Architecture, risk judgments, semantic conflicts, final acceptance | Main manager | Delegate evidence gathering; retain decisions. |
 
 ## Applying the Gate
 
-- A release-readiness assessment can assign rule/test coverage, runtime performance, and build/resource evidence as bounded scouting slices. The manager defines release criteria and accepts the findings; it need not read every module before dispatching scouts.
-- For a tiny skill wording correction, the manager can state that reading the relevant instructions, changing two documents, and validating them costs less than a worker handoff. This exception does not extend to unrelated implementation discovered later.
-- Sequential dependencies alone do not justify keeping all execution in the main thread. Dispatch the next bounded slice after its inputs are ready. A dirty workspace excludes external HEAD-only routes for affected slices, not all permitted native work.
-- Before substantial work, give a concise routing update: slices, worker route or concrete manager-only reason, and manager-owned decisions. When dispatch succeeds, identify the native agent ID or external runner artifact directory. A plan to dispatch is not evidence that a worker ran; report blocked routes and any manager takeover explicitly.
+- Before substantial execution, inspect rules/Git state and at most two small targeted discovery batches. If further searching, tracing, or failure analysis is needed, delegate a bounded question. Unknown target paths are a reason for read-only scouting, not for the manager to finish discovery first. This starter limit is a policy to evaluate, not a token estimate.
+- Known small local edits, short supplied-code explanations, and deterministic checks with bounded output may stay direct. A failing check becomes a new routing decision; do not consume bulk logs in the manager. Architecture uncertainty does not exempt evidence gathering from delegation.
+- For implementation, the root defines observable acceptance and write ownership. One worker may implement and run relevant tests. Reuse evidence and workers when their route, effort and permissions fit; do not force scout → executor → verifier handoffs or silently upgrade a scout to write access.
+- Sequential work is eligible only when the active dispatch tool permits it. For a native tool requiring independent work alongside useful manager work, identify that work honestly; do not invent busywork or relabel the same blocked call through another route. If no permitted route fits, state the concrete constraint and take over.
+- Before substantial work, briefly identify the delegated slice and manager decisions. After dispatch record the actual agent ID or runner artifact directory. Distinguish missing skill, direct exception, blocked dispatch, worker failure, and accepted worker result. A plan is not proof of execution.
 
-Skill discovery and text instructions are not runtime enforcement. If the skill is missing from the session, stale, or restricted by higher-priority instructions, stronger wording in this file cannot force dispatch. Check the loaded skill path/version and current tool permissions before diagnosing a routing failure; reload the skill registry after installation updates.
+Skill discovery and text instructions are not runtime enforcement. Check the loaded path/version and tool restrictions before diagnosing failure; reload the registry after installation updates. Global policy is optional user configuration: see `global-policy.md`.
 
 ## Availability and Context
 
-1. For execution, try DeepSeek first: confirm `dsh` is executable, `dsh --profile headless --help` succeeds, the packet passes runner preflight, and the data/task is permitted for that provider. Use `scripts/run-dsh-worker.sh`.
-2. If DeepSeek is unavailable or fails the slice, use Kimi when permitted and callable through `scripts/run-kimi-worker.sh`.
-3. If external routes cannot be used, inspect the live native tool for model overrides; select Luna, then Terra. A catalog entry alone is not proof of callability. Record skipped-route reasons, including context or authorization restrictions.
-4. Native scouting uses explicit `reasoning_effort: "low"`; implementation and integration use `"medium"`. Never omit the model, inherit full parent history, or use Sol.
-5. Integration starts at Luna even if DeepSeek is available. DeepSeek/Kimi runners start from committed HEAD and reject dirty allowed paths. A test run in that detached checkout does not verify the current combined workspace. Native access to the target must also be confirmed; if unavailable, the manager performs the integration/checks there.
-6. Use the runtime model evidence when reporting actual models. Do not substitute a requested alias or self-reported model identity for observed metadata.
+1. Read-only work is fixed to native Luna with `low`; use `read-only-worker.md`, without probing external providers. If Luna or the required native behavior is unavailable, use the manager. A targeted Luna retry must fit the recovery budget; do not upgrade the model/effort to recover read-only work.
+2. For source-writing execution, confirm `dsh` is executable, `dsh --profile headless --help` succeeds, external boundaries below are satisfied, and the packet passes preflight. Then use `scripts/run-dsh-worker.sh`. DeepSeek/Kimi retain their configured provider reasoning settings; native `low`/`medium` tiers do not apply to external CLIs.
+3. If DeepSeek is unavailable or fails, use Kimi when permitted through `scripts/run-kimi-worker.sh`, then native Luna and Terra (`medium`) within budget. Check actual tool callability, not just catalog entries. Record skipped-route reasons.
+4. Patch integration starts at Luna (`medium`). External runners start from committed HEAD and cannot verify uncommitted integrated changes. Confirm native access to the target; otherwise the manager integrates there. Verification-only analysis uses Luna (`low`), while a writer can run its own relevant checks.
+5. Record observed model evidence separately from requested aliases. Never inherit full parent history or use Sol.
+
+## External Worker Boundary
+
+- Detached worktrees isolate Git changes, not operating-system access. Do not send secrets, credentials, cookies, private keys, `.env` values, private sessions, or account access tasks.
+- External workers exclude authentication, payments, security conclusions, migrations, destructive Git operations, and dependencies on uncommitted main-workspace changes.
+- Require HEAD-only dependencies and bounded allowed/forbidden paths. Do not bypass dirty-path preflight or broaden external read scope to the whole repository. Native read-only scope does not change external runner contracts.
+- Honor existing provider/data authorization. A denied external transfer cannot be routed through another external provider as a workaround; use a permitted native route.
+- Never automatically apply external patches or create project `.codex/config.toml` or custom agent TOML files.
 
 ## Native Spawn Gate
 
@@ -35,7 +44,7 @@ Only the root may dispatch. Immediately before each `spawn_agent`:
 
 1. Call `list_agents`; count live workers plus root against the active runtime limit.
 2. When no slot remains, queue or wait. Do not hardcode an older concurrency limit.
-3. Pass explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and the complete task packet. Prohibit all nested delegation.
+3. Pass explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and the route's task packet. Prohibit all nested delegation.
 
 ## Integration Contract
 
@@ -51,7 +60,7 @@ Defaults for one user task, unless the user explicitly sets a different budget:
 
 - At most **3 execution attempts per slice**, across all providers and native workers.
 - At most **2 recovery attempts for the whole task**, shared across execution, integration, and verification slices. A recovery is any worker attempt after that slice's initial attempt, including provider fallback after execution failure and corrective follow-ups to an existing worker. Use stable slice IDs; renaming or splitting failed work does not reset its recovery count.
-- At most **1 targeted retry on the same route**. Use it only for a precise, fixable failure; otherwise advance through the role's fallback order. Both limits above still apply.
+- At most **1 targeted retry on the same route**. Use it only for a precise, fixable failure; otherwise advance through the role's fallback order if one exists; read-only work returns to the manager. Both limits above still apply.
 - Missing executables, denied dispatch, and preflight failures before model execution do not consume execution attempts. Once model execution starts, its failure and token cost count, even when no receipt is recoverable. Unknown launch state is conservatively counted.
 - When either limit is exhausted, stop worker recovery and return the unresolved criterion to the main manager. The manager may complete a bounded fix directly or report a real blocker; it must not launch a fresh worker loop under a new name.
 
