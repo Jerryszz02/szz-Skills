@@ -9,7 +9,6 @@ Copy the following into your global `~/.codex/AGENTS.md` (or the effective Codex
 - When permitted by the runtime, delegate sustained repository exploration,
   failure diagnosis, and independently verifiable implementation using
   $subagent-orchestrator. Do not finish exploration before handing it off.
-- Use Luna with low reasoning for read-only delegated work.
 - Handle known small edits, short supplied-code explanations, and bounded
   deterministic checks directly. Reuse workers and evidence; avoid duplicate work.
 - If no permitted route fits or recovery is exhausted, state the concrete reason
