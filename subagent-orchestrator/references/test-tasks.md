@@ -25,7 +25,7 @@ Record whether the skill was available/read, why a route was selected, whether a
 
 ## 2. Reproducible Live Tasks
 
-Use this repository at one fixed, recorded commit. Make fresh **isolated copies** for each task/variant; never inject faults into the working repository. Use a clean evaluation fixture containing only the tracked `subagent-orchestrator/scripts/` files and a `README.md` with the single line `# Usage Fixture`. Initialize and commit the fixture before trials so external HEAD-only routes can operate. Do not copy inherited solutions, secrets, installed skills, or historical run artifacts.
+Use this repository at one fixed, recorded commit. Make fresh **isolated copies** for each task/variant; never inject faults into the working repository. Use a clean evaluation fixture containing the tracked `subagent-orchestrator/scripts/` files, `subagent-orchestrator/references/kimi-worker-agent.md`, and a `README.md` with the single line `# Usage Fixture`. Preserve the `subagent-orchestrator/scripts/` and `subagent-orchestrator/references/` sibling layout: the copied Kimi runner resolves its agent file relative to its own directory. Include the reference in every variant, even when DeepSeek is expected to be available, so Kimi fallback remains runnable. Initialize and commit the fixture before trials so external HEAD-only routes can operate. Do not copy inherited solutions, secrets, installed skills, or historical run artifacts.
 
 For E3/E4, prepare the fault **before committing the fixture**. Replace the following exact line in the fixture's `summarize_usage.py` (assert exactly one match):
 
