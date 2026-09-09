@@ -30,7 +30,8 @@ python3 -m unittest test_dsh_runner.py test_kimi_runner.py test_worker_receipt.p
 
 ## 人工核对
 
-- `SKILL.md` 和 routing guide 都明确固定 fallback：DeepSeek、Kimi、Luna、Terra；不含 Sol worker。
+- `SKILL.md` 和 routing guide 都明确写入 fallback：DeepSeek、Kimi、Spark、Luna、Terra；不含 Sol worker。
+- 核对 Spark 适用边界、运行时不可用回退、只读/写入权限及独立视觉验收，场景见 [路由测试](../../subagent-orchestrator/references/test-tasks.md)。
 - 每个原生 spawn 明确要求 `model`、`reasoning_effort` 和 `fork_turns="none"`。
 - 每个原生 spawn 前要求检查当前并发位，且只有根/主 Agent 可以调用。
 - README 安装命令和目录树使用 `subagent-orchestrator`。

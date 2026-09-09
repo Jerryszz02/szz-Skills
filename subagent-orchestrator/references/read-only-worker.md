@@ -1,13 +1,13 @@
-# Read-only Luna Worker
+# Read-only Native Worker
 
-Use only native `gpt-5.6-luna`, explicit `reasoning_effort: "low"`, `fork_turns: "none"`. No external provider probing, worktree, patch, or Terra fallback. If the route is unavailable, constrained by the active tool, or fails after permitted recovery, state the reason and let the manager take over.
+For bounded text/code evidence, use Spark (`gpt-5.3-codex-spark`, `medium`) when eligible under `spark-worker.md`, then Luna (`gpt-5.6-luna`, `low`), then manager. Broader review or failure analysis starts at Luna. Always use `fork_turns: "none"`. No external provider probing, patch, or Terra fallback. An unavailable or failed Spark route may advance to Luna within the shared recovery budget; after Luna is unavailable or unsuccessful, the manager takes over.
 
 ## Compact Packet
 
 Send these facts directly; no external packet headings or HEAD-only preflight are needed:
 
 ```text
-Role: read-only scout/reviewer/verifier; Luna, low, fork none.
+Role: read-only scout/reviewer/verifier; <selected model and effort>, fork none.
 Slice: <stable ID>; attempt: <n>; remaining task recoveries: <n>.
 Question: <one bounded question and observable completion criterion>.
 Workspace/state: <absolute path, current workspace or committed revision>.
@@ -16,7 +16,8 @@ Exclude: secrets, credentials, .env values, private sessions, .git internals,
          dependency/vendor/generated trees unless explicitly relevant and permitted.
 Source writes: forbidden. No repairs, Git mutations, nested delegation or provider calls.
 Evidence/checks: <required paths/symbols/line evidence or exact safe commands>.
-Return: conclusion, evidence, checks with cwd/exit code, uncertainty and blockers;
+Return: paths, symbols/line numbers, brief call relationships, code evidence,
+        checks with cwd/exit code, uncertainty and blockers; no whole-file dumps;
         target <=250 words, longer only for essential actionable evidence.
 Artifacts: <optional directory outside source repo for long logs/results>.
 ```
@@ -29,11 +30,11 @@ The manager checks rules/state and supplies the question, not a precomputed file
 
 Only root dispatches. Call `list_agents` immediately before spawn; check the active tool's availability, independence requirements and capacity. Queue if capacity alone is exhausted. Identify useful independent manager work when the native tool requires it. Do not claim a dispatch that never returned an agent ID.
 
-Apply at most three attempts per slice, two recovery attempts shared across the entire task, and one targeted retry on this route. Once model execution starts, a failed attempt counts even if its receipt is missing. A corrective follow-up counts as recovery; never rename a failed slice to reset the budget. Unavailable routes/preflight-only failures do not count as model execution; unknown launch state counts conservatively. There is no fallback model for this role.
+Apply at most three attempts per slice, two recovery attempts shared across the entire task, and one targeted retry on this route. Once model execution starts, a failed attempt counts even if its receipt is missing. A corrective follow-up counts as recovery; never rename a failed slice to reset the budget. Unavailable routes/preflight-only failures do not count as model execution; unknown launch state counts conservatively. The only model fallback is eligible Spark to Luna; never reset the budget when switching.
 
 ## Compact Native Receipt
 
-Root records one JSON receipt outside the repository per attempt. Add dispatch details and evidence from the actual call/result; do not ask the worker to guess telemetry. Example with unavailable runtime counters:
+Root records one JSON receipt outside the repository per attempt. Add dispatch details and evidence from the actual call/result; do not ask the worker to guess telemetry. Luna fallback example with unavailable runtime counters (use the actual requested model/effort for Spark attempts):
 
 ```json
 {

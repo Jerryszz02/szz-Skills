@@ -47,9 +47,11 @@ yes
 
 ## Native Worker Additions
 
-Also state:
+For Spark, first apply `spark-worker.md`; keep DeepSeek/Kimi ahead of it on source-writing routes. Also state:
 
-- Role, required model, and required reasoning level.
+- Role, required model, and required reasoning level supported by the active tool.
+- For a Spark writer: manager-approved plan, exact inputs/outputs and edge cases, owned files, non-goals, and exact verification commands with cwd and expected result. Missing business rules or an unconfirmed cause return to the manager; do not design them independently.
+- Explicitly run the required checks and report command/cwd/exit code plus a concise result. Do not delete tests, relax assertions, or alter requirements to make checks pass. UI work needs separate visual acceptance by a capable manager/tool; implementation is not visual verification.
 - `fork_turns: "none"`; put all required context in the task packet instead of replaying parent history.
 - Read-only or workspace-write permission, absolute target workspace, permitted read scope and owned write paths.
 - For integration: starting HEAD/dirty-path inventory, exact root-approved patch paths and digests, writer dependencies, required commands, and log destinations. Verification-only packets prohibit source repairs.
