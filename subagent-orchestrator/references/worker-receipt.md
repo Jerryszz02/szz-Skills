@@ -51,6 +51,8 @@ The main agent reviews the receipt together with the actual diff and test output
 
 ## Task-Level Accounting
 
+For local Codex incremental records, use `collect_native_receipt.py` with explicit thread/turn scope as described in [provider-diagnostics.md](provider-diagnostics.md). It supports manager receipts and unavailable model metadata without passing a requested alias as observed evidence. Keep its response IDs to detect overlapping follow-up accounting.
+
 Keep all attempted worker receipts, including failed, scope-rejected, and metadata-incomplete runs. Record stable slice IDs and attempt numbers in the task ledger. Include integration/check workers and corrective follow-ups. Preflight-only rejection has no model attempt; unknown launch state is recorded with unavailable usage.
 
 Record one separate manager receipt for the user task with `actual_model`, `status`, and the same `usage` object. It must contain only the main agent's task-local usage, excluding subagents. Use runtime task totals or end-minus-start cumulative counters with known scope. A continuing worker's follow-up likewise needs non-overlapping attempt deltas, not its full session total repeated for every attempt. Preserve the source and counter boundaries in `evidence`; retain original artifacts outside the repository.

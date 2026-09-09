@@ -39,6 +39,8 @@ This exercises instructions, not the real execution harness. It uses evaluator t
 
 ## Runtime Evidence
 
+Use [provider-diagnostics.md](provider-diagnostics.md) for runner discovery, structured skip reasons and native rollout collection. Manifests may add `"routes": ["dsh/route.json", "native-skip.json"]`; these are diagnostics, not extra model attempts. The summary exposes `routing`, `skipped_routes` and `unaccounted_routes`. A launched route absent from `runs` makes worker/total usage unknown. Per-run `usage` retains cache and source; native receipts with overlapping response IDs are rejected.
+
 External attempts already produce `worker-receipt.json`. For main/native runs, use runtime evidence with explicit task/attempt scope. Do not assume the native collaboration tool exposes usage. Record unavailable fields honestly. One manager receipt covers all main-agent work for this task, including its planning, review, and any direct repair; exclude child usage.
 
 The manager receipt uses the same `actual_model`, `status`, and `usage` fields as a worker. For example, when scoped counters are unavailable:

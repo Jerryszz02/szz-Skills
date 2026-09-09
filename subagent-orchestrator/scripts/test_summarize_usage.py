@@ -36,6 +36,46 @@ def run_cli(root: Path, value: object, *extra: str) -> subprocess.CompletedProce
 
 
 class SummarizeTests(unittest.TestCase):
+    def test_routes_separate_preflight_from_unaccounted_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_receipt(root / "manager.json", 10)
+            runs = [{"id": "main", "role": "manager", "slice_id": "main", "attempt": 1,
+                     "receipt": "manager.json"}]
+            route = {"schema_version": 1, "provider": "dsh", "reason_code": "cli_missing",
+                     "execution_state": "not_started"}
+            (root / "route.json").write_text(json.dumps(route))
+            value = manifest(runs, routes=["route.json"])
+            result = run_cli(root, value)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            summary = json.loads(result.stdout)
+            self.assertEqual(summary["worker_attempts"], 0)
+            self.assertEqual(summary["retry_attempts"], 0)
+            self.assertEqual(summary["total_tokens"], 10)
+            self.assertEqual(summary["skipped_routes"][0]["reason_code"], "cli_missing")
+            route.update(execution_state="unknown", reason_code="worker_failed")
+            (root / "route.json").write_text(json.dumps(route))
+            summary = json.loads(run_cli(root, value).stdout)
+            self.assertFalse(summary["usage_complete"])
+            self.assertIsNone(summary["total_tokens"])
+            self.assertEqual(len(summary["unaccounted_routes"]), 1)
+
+    def test_copied_native_receipts_cannot_overlap_responses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_receipt(root / "manager.json", 10)
+            write_receipt(root / "worker.json", 20, worker="native")
+            receipt = json.loads((root / "worker.json").read_text())
+            receipt["evidence"] = {"thread_id": "child", "response_ids": ["response1"]}
+            for name in ("worker.json", "copy.json"):
+                (root / name).write_text(json.dumps(receipt))
+            runs = [{"id": "main", "role": "manager", "slice_id": "root", "attempt": 1, "receipt": "manager.json"},
+                    {"id": "worker", "role": "worker", "slice_id": "build", "attempt": 1, "receipt": "worker.json"},
+                    {"id": "retry", "role": "worker", "slice_id": "build", "attempt": 2, "receipt": "copy.json"}]
+            result = run_cli(root, manifest(runs))
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("overlapping native response usage", result.stderr)
+
     def test_totals_cached_once_failed_attempt_and_relative_output(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

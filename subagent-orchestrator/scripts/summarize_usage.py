@@ -88,6 +88,7 @@ def summarize(run_path: Path) -> dict[str, Any]:
     seen_ids: set[str] = set()
     seen_identity: set[tuple[str, str, int]] = set()
     seen_paths: set[Path] = set()
+    seen_responses: set[tuple[str, str]] = set()
     manager_count = 0
     results: list[dict[str, Any]] = []
     manager_values: list[int] = []
@@ -154,6 +155,17 @@ def summarize(run_path: Path) -> dict[str, Any]:
             if actual_model is not None and (not isinstance(actual_model, str) or not actual_model.strip()):
                 raise ValidationError(f"receipt {resolved} actual_model must be a nonempty string or null")
             available, tokens = _usage(receipt, resolved)
+            evidence = receipt.get("evidence", {})
+            if isinstance(evidence, dict) and "response_ids" in evidence:
+                thread_id = _nonempty(evidence.get("thread_id"), "evidence.thread_id")
+                response_ids = evidence["response_ids"]
+                if not isinstance(response_ids, list):
+                    raise ValidationError("evidence.response_ids must be a list")
+                for response_id in response_ids:
+                    key = (thread_id, _nonempty(response_id, "response_id"))
+                    if key in seen_responses:
+                        raise ValidationError(f"overlapping native response usage: {response_id}")
+                    seen_responses.add(key)
         if not available:
             missing.append(run_id)
         else:
@@ -164,17 +176,51 @@ def summarize(run_path: Path) -> dict[str, Any]:
                 worker_values.append(tokens)
         results.append({"id": run_id, "role": role, "slice_id": slice_id, "attempt": attempt,
                         "receipt": str(resolved) if resolved else None, "receipt_status": receipt_status,
-                        "actual_model": actual_model, "usage_complete": available})
+                        "actual_model": actual_model, "usage_complete": available,
+                        "usage": receipt.get("usage") if resolved else None})
     if manager_count != 1:
         raise ValidationError("runs must contain exactly one manager entry")
+    # Route decisions live outside runs: a preflight skip is not a model attempt.
+    route_refs = manifest.get("routes", [])
+    if not isinstance(route_refs, list):
+        raise ValidationError("routes must be a list of diagnostic paths")
+    routing = []
+    seen_routes: set[Path] = set()
+    unaccounted = []
+    for reference in route_refs:
+        path = Path(_nonempty(reference, "route path"))
+        path = (path if path.is_absolute() else run_path.parent / path).resolve()
+        if path in seen_routes:
+            raise ValidationError(f"duplicate route path: {path}")
+        seen_routes.add(path)
+        route = _load_json(path, "route diagnostics")
+        if not isinstance(route, dict) or route.get("schema_version") != 1:
+            raise ValidationError("route diagnostics schema_version must be 1")
+        state = route.get("execution_state")
+        if state not in ("not_started", "unknown", "observed"):
+            raise ValidationError("invalid route execution_state")
+        _nonempty(route.get("reason_code"), "route reason_code")
+        _nonempty(route.get("provider"), "route provider")
+        receipt_ref = route.get("receipt")
+        route_receipt = Path(receipt_ref) if isinstance(receipt_ref, str) else None
+        if route_receipt is not None:
+            route_receipt = (route_receipt if route_receipt.is_absolute() else path.parent / route_receipt).resolve()
+        if state != "not_started" and route_receipt not in seen_paths:
+            unaccounted.append(str(path))
+        routing.append({"path": str(path), **route})
     manager_tokens = manager_values[0] if len(manager_values) == 1 else None
     worker_tokens = sum(worker_values) if len(worker_values) == len([r for r in entries if r["role"] != "manager"]) else None
+    if unaccounted:
+        worker_tokens = None
     observed = sum(manager_values) + sum(worker_values)
     return {"schema_version": 1, "task_id": task_id, "variant": variant, "acceptance": acceptance,
             "elapsed_seconds": elapsed, "runs": results, "manager_tokens": manager_tokens,
             "worker_tokens": worker_tokens, "total_tokens": manager_tokens + worker_tokens
             if manager_tokens is not None and worker_tokens is not None else None,
-            "observed_tokens": observed, "usage_complete": not missing, "missing_usage": missing,
+            "observed_tokens": observed, "usage_complete": not missing and not unaccounted, "missing_usage": missing,
+            "routing": routing, "unaccounted_routes": unaccounted,
+            "skipped_routes": [r for r in routing if r["execution_state"] == "not_started"
+                               and r["reason_code"] != "cli_found"],
             "worker_attempts": sum(1 for r in entries if r["role"] in {"worker", "integrator"}),
             "retry_attempts": sum(1 for r in entries if r["role"] != "manager" and r["attempt"] > 1)}
 
