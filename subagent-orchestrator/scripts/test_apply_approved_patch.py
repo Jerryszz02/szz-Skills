@@ -261,6 +261,74 @@ class ApprovedPatchTests(unittest.TestCase):
 
     # -- digest and HEAD gates ------------------------------------------
 
+    def test_content_edit_of_executable_preserves_mode_and_index(self) -> None:
+        path = self.write("work/run.sh", "#!/bin/sh\necho old\n")
+        path.chmod(0o755)
+        self.commit("executable base")
+        self.write("work/run.sh", "#!/bin/sh\necho new\n")
+        patch = git(self.repo, "diff", "--binary", "--", "work/run.sh").stdout
+        git(self.repo, "checkout", "--", "work/run.sh")
+        self.assertIn(b" 100755\n", patch)
+        before_index = git(self.repo, "ls-files", "--stage", "-z").stdout
+        before_mode = path.stat().st_mode
+        checked = self.invoke(patch)
+        self.assertEqual(checked.returncode, 0, checked.stdout)
+        self.assertEqual(self.read("work/run.sh"), "#!/bin/sh\necho old\n")
+        applied = self.invoke(patch, apply=True)
+        self.assertEqual(applied.returncode, 0, applied.stdout)
+        self.assertEqual(self.read("work/run.sh"), "#!/bin/sh\necho new\n")
+        self.assertEqual(path.stat().st_mode, before_mode)
+        self.assertEqual(git(self.repo, "ls-files", "--stage", "-z").stdout, before_index)
+
+    def test_delete_executable_text_file_preserves_index(self) -> None:
+        path = self.write("work/run.sh", "#!/bin/sh\necho old\n")
+        path.chmod(0o755)
+        self.commit("executable base")
+        path.unlink()
+        patch = git(self.repo, "diff", "--binary", "--", "work/run.sh").stdout
+        git(self.repo, "checkout", "--", "work/run.sh")
+        self.assertIn(b"deleted file mode 100755\n", patch)
+        before_index = git(self.repo, "ls-files", "--stage", "-z").stdout
+        checked = self.invoke(patch)
+        self.assertEqual(checked.returncode, 0, checked.stdout)
+        self.assertTrue(path.exists())
+        applied = self.invoke(patch, apply=True)
+        self.assertEqual(applied.returncode, 0, applied.stdout)
+        self.assertFalse(path.exists())
+        self.assertEqual(git(self.repo, "ls-files", "--stage", "-z").stdout, before_index)
+
+    def test_sha256_repository_requires_exact_full_head(self) -> None:
+        self.repo = self.root / "sha256-repo"
+        proc = subprocess.run(
+            ["git", "init", "-q", "--object-format=sha256", str(self.repo)],
+            capture_output=True, check=False,
+        )
+        if proc.returncode:
+            self.skipTest("installed Git cannot initialize SHA-256 repositories")
+        git(self.repo, "config", "user.name", "Test")
+        git(self.repo, "config", "user.email", "test@example.com")
+        self.write("work/target.txt", "old\n")
+        self.commit()
+        head = self.head()
+        self.assertEqual(len(head), 64)
+        patch = self.make_edit_patch("work/target.txt", "new\n")
+        for expected, reason in ((head[:40], "head_mismatch"),
+                                 (head[:63], "head_invalid"),
+                                 ("0" * 64, "head_mismatch")):
+            with self.subTest(expected=expected):
+                rejected = self.invoke(patch, apply=True, expected_head=expected)
+                self.assertNotEqual(rejected.returncode, 0)
+                self.assertEqual(self.result(rejected)["reason_code"], reason)
+                self.assertEqual(self.read("work/target.txt"), "old\n")
+        checked = self.invoke(patch)
+        self.assertEqual(checked.returncode, 0, checked.stdout)
+        self.assertEqual(self.result(checked)["actual_head"], head)
+        self.assertEqual(self.read("work/target.txt"), "old\n")
+        applied = self.invoke(patch, apply=True)
+        self.assertEqual(applied.returncode, 0, applied.stdout)
+        self.assertEqual(self.read("work/target.txt"), "new\n")
+        self.assertEqual(git(self.repo, "diff", "--cached", "--name-only").stdout, b"")
+
     def test_digest_mismatch(self) -> None:
         patch = self.make_edit_patch("work/target.txt", "new\n")
         proc = self.invoke(patch, sha256=ZERO_SHA256)
@@ -472,10 +540,24 @@ class ApprovedPatchTests(unittest.TestCase):
         self.assertEqual(self.result(self.invoke(binary))["reason_code"], "patch_binary")
 
     def test_mode_patch_rejected(self) -> None:
-        os.chmod(self.repo / "work" / "target.txt", 0o755)
-        patch = git(self.repo, "diff", "--", "work/target.txt").stdout
-        git(self.repo, "checkout", "--", "work/target.txt")
-        self.assertEqual(self.result(self.invoke(patch))["reason_code"], "patch_mode_change")
+        for before, after in ((0o644, 0o755), (0o755, 0o644)):
+            for content_change in (False, True):
+                with self.subTest(before=before, content_change=content_change):
+                    path = self.write("work/target.txt", "old\n")
+                    path.chmod(before)
+                    git(self.repo, "add", "work/target.txt")
+                    committed = git(self.repo, "commit", "--allow-empty", "-qm", "mode base")
+                    self.assertEqual(committed.returncode, 0, committed.stderr.decode())
+                    path.chmod(after)
+                    if content_change:
+                        self.write("work/target.txt", "new\n")
+                    patch = git(self.repo, "diff", "--binary", "--", "work/target.txt").stdout
+                    git(self.repo, "checkout", "--", "work/target.txt")
+                    proc = self.invoke(patch, apply=True)
+                    self.assertNotEqual(proc.returncode, 0)
+                    self.assertEqual(self.result(proc)["reason_code"], "patch_mode_change")
+                    self.assertEqual(self.read("work/target.txt"), "old\n")
+                    self.assertEqual(path.stat().st_mode & 0o777, before)
 
     def test_symlink_patch_rejected(self) -> None:
         os.symlink("target.txt", self.repo / "work" / "link.txt")

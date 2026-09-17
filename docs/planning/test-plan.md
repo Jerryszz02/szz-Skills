@@ -2,7 +2,7 @@
 
 ## 范围与状态
 
-本轮验证委派规则、确定性整合、现有 runner/计量回归和安装一致性；不把离线通过称为节省 Token。更新日期：2026-09-17。当前状态：已验证。完整离线套件 91 项通过，其中新 helper 29 项；10 个独立路由场景符合预期，技能格式、Markdown 链接、planning 审计、shell 语法与 diff 检查通过。本地 skill 内容已同步；重启加载与真实节省不在这些结果之内。
+本轮验证委派规则、确定性整合、现有 runner/计量回归和安装一致性；不把离线通过称为节省 Token。更新日期：2026-09-17。当前状态：已验证。完整离线套件 94 项通过，其中新 helper 32 项；10 个独立路由场景符合预期，技能格式、Markdown 链接、planning 审计、shell 语法与 diff 检查通过。本地 skill 内容已同步；重启加载与真实节省不在这些结果之内。
 
 ## 自动验证
 
@@ -27,6 +27,8 @@ python3 plan-project-docs/scripts/audit_planning_docs.py --root .
 - 原有 DSH/Kimi 的 profile 预检、HEAD-only、脏路径拒绝、patch 导出、scope、退出码和收据规则不退化。
 - 未知 usage 仍为 null；重复 response ID 不重复计数，缓存和推理输出不再次相加。
 - 新 helper 默认 check-only，显式 apply 才写入；相同 hash 字节用于解析和应用。
+- 使用真实 Git diff 复现并覆盖已有可执行文本的内容修改和删除；保留 index 与权限，新增可执行文件及两个方向的权限变更仍拒绝。
+- 使用真实 SHA-256 Git 仓库验证完整 64 位 HEAD；截断或不匹配的值拒绝，原有 SHA-1 测试保留。
 - helper 拒绝 hash/HEAD 不一致、越界/禁止路径、软链接、模式/二进制/重命名补丁、会改变身份的路径规范化及大小写/Unicode 别名；重叠 staged/unstaged/untracked/ignored 数据及隐藏 index 标记的路径均拒绝。
 - 成功集成不改变 index，不影响无关 staged/unstaged 工作；失败不产生部分应用或自动回滚。
 - helper 不启动模型、不执行内容中的命令；最终目标工作区验证仍由主模型负责。

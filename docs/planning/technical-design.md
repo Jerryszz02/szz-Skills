@@ -40,9 +40,9 @@
 
 主模型审过具体 patch 后，使用 `scripts/apply_approved_patch.py`：
 
-- 显式绑定仓库根目录、完整起始 HEAD、patch SHA-256 和原任务 scope；默认只检查，`--apply` 才写入。
+- 显式绑定仓库根目录、完整起始 HEAD（SHA-1 40 位或 SHA-256 64 位）、patch SHA-256 和原任务 scope；HEAD 必须精确匹配，默认只检查，`--apply` 才写入。
 - 只读一次 patch 字节，校验 hash，将同一字节送入 Git 路径解析、可应用性检查与应用，避免重复读取变动的 patch。
-- 第一版仅支持普通文本文件增删改；拒绝二进制、重命名/复制、权限变更、软链接、submodule；不隐式降级。
+- 第一版仅支持普通文本文件增删改，包括已有可执行文本的纯内容修改和删除；仍拒绝新增可执行文件、二进制、重命名/复制、权限变更、软链接、submodule；不隐式降级。
 - 从 patch 提取路径，拒绝越界、`.git`、软链接路径、与 staged/unstaged/untracked/ignored 数据重叠的修改；保留无关改动。
 - 应用前重查 HEAD 和脏路径；不用 `--3way`、`--reject`、`--index` 或自动回滚。主模型串行协调写入，helper 不是跨进程锁或 OS 沙箱。
 - 返回紧凑 JSON 与退出码；不启动模型，不执行 patch 内容或测试命令，不创建 commit。

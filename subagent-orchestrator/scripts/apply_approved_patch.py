@@ -24,7 +24,7 @@ from task_packet import PacketError, load_packet, matches, normalize_changed_pat
 
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-HEAD_RE = re.compile(r"^[0-9a-f]{40}$")
+HEAD_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 MODE_LINE_RE = re.compile(r"^(new file mode|deleted file mode) ([0-7]{6})$")
 INDEX_LINE_RE = re.compile(r"^index [0-9a-fA-F]+\.\.[0-9a-fA-F]+(?: ([0-7]{6}))?$")
 BINARY_LINE_RE = re.compile(r"^Binary files .* differ$")
@@ -103,17 +103,17 @@ def analyze_patch(text: str) -> None:
             raise Rejection("patch_mode_change", "file mode changes are not supported")
         mode_match = MODE_LINE_RE.match(line)
         if mode_match:
-            _check_mode(mode_match.group(2))
+            _check_mode(mode_match.group(2), allow_executable=mode_match.group(1) == "deleted file mode")
             continue
         index_match = INDEX_LINE_RE.match(line)
         if index_match and index_match.group(1):
-            _check_mode(index_match.group(1))
+            _check_mode(index_match.group(1), allow_executable=True)
     if not saw_diff:
         raise Rejection("patch_unsupported_format", "not a standard git diff patch")
 
 
-def _check_mode(mode: str) -> None:
-    if mode == "100644":
+def _check_mode(mode: str, *, allow_executable: bool = False) -> None:
+    if mode == "100644" or (allow_executable and mode == "100755"):
         return
     if mode == "120000":
         raise Rejection("patch_symlink", "symlink patches are not supported")
@@ -239,7 +239,7 @@ def run(args: argparse.Namespace, result: dict) -> None:
     expected = args.expected_head.strip().lower()
     result["expected_head"] = expected
     if not HEAD_RE.fullmatch(expected):
-        raise Rejection("head_invalid", "--expected-head must be the full 40-hex commit id")
+        raise Rejection("head_invalid", "--expected-head must be the full 40- or 64-hex commit id")
 
     root = resolve_root(Path(args.cwd))
     head = get_head(root)
