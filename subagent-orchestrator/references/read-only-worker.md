@@ -1,5 +1,7 @@
 # Read-only Native Worker
 
+Apply the work-mode gate first. Known small lookups and fixed checks can stay with the manager; dispatch for substantial independent evidence with compact acceptance, not merely because a file has to be read.
+
 For bounded text/code evidence, use Spark (`gpt-5.3-codex-spark`, `medium`) when eligible under `spark-worker.md`, then Luna (`gpt-5.6-luna`, `low`), then manager. Broader review or failure analysis starts at Luna. Always use `fork_turns: "none"`. No external provider probing, patch, or Terra fallback. An unavailable or failed Spark route may advance to Luna within the shared recovery budget; after Luna is unavailable or unsuccessful, the manager takes over.
 
 ## Compact Packet

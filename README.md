@@ -10,7 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制研究景点或餐厅，生成审核清单，并在批准后保存到 Google Maps | “研究京都景点”“推荐成都餐厅”“把审核清单加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
-| `subagent-orchestrator` | 可用 | 主模型规划验收，定向只读 Spark 优先，写入 DeepSeek 优先，并汇总任务用量 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
+| `subagent-orchestrator` | 可用 | 按交接与验收成本选择委派，执行器实现自检，写入 DeepSeek 优先 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
 
 ## How This Repository Works
 
@@ -19,8 +19,8 @@
 一次完整维护通常分为四步：
 
 1. 在对应 skill 目录里修改 `SKILL.md`、`references/`、`scripts/` 或 `agents/openai.yaml`。
-2. 用 `quick_validate.py` 校验被修改的 skill 目录。
-3. 运行 `scripts/sync-installed-skills.sh`，把仓库中的 skill 同步到 `~/.agents/skills/`。
+2. 运行 `scripts/sync-installed-skills.sh`，把仓库中的 skill 同步到 `~/.agents/skills/`。
+3. 用 `quick_validate.py` 校验被修改的 skill 目录，并运行相关检查。
 4. 重启 Codex，让 skill registry 重新加载本地目录。
 
 本仓库中的文件按职责分工：
@@ -211,23 +211,15 @@ python3 -m unittest test_score_candidates.py
 
 ### 功能
 
-`subagent-orchestrator` 让主模型（选用 GPT-6 时即 GPT-6）默认负责需求、规划、关键决策和最终验收，保留已知小改动、短代码解释、输出可控的确定性检查直做及失败接管。读取规则和 Git 状态后，最多做两轮小范围定向定位；若仍需持续探索或诊断，则在深入读取前委派。这是待评估的策略门槛，不是已测得的 token 盈亏点。
+`subagent-orchestrator` 先判断工作能否独立交付、需要多少交接材料，以及主模型能否用少量证据验收，再选择直接执行、确定性工具或委派。小改动、已知强耦合工作和固定命令可直接完成；范围扩大时重新判断。主模型保留需求、方案、关键决策和最终验收，不再以固定搜索次数触发委派。
 
-**定向只读取证使用 Spark（medium）→ Luna（low）→ 主 Agent**；更广泛的只读 review 和失败分析保持 Luna low → 主 Agent，不探测外部 provider、不回退 Terra。只读 packet 返回文件路径、函数与行号、简短调用关系、证据和未确认问题，禁止源码写入。
+通过委派门槛后，模型顺序保持不变：定向只读 **Spark medium → Luna low → 主模型**，广泛只读分析 **Luna low → 主模型**；写入 **DeepSeek → Kimi → Spark → Luna → Terra**，原生写入 medium。Spark 必须符合[任务边界](subagent-orchestrator/references/spark-worker.md)且当前工具可调用；不支持就跳过，不使用替代配置绕过。禁止 Sol 和嵌套委派；原生 spawn 前检查实时并发位，显式模型/档位、`fork_turns: "none"`。
 
-涉及写入的实现、修复、测试代码和文档保持 **DeepSeek → Kimi → Spark → Luna → Terra**，DeepSeek 第一优先级不变。前两者仍通过已配置的 CLI 在 detached worktree 中执行；原生写入使用 medium。Spark 只负责主 Agent 已明确方案、边界和验收的小块任务；不适用时跳过。
+默认一个执行器负责同一切片的实现、相关测试及首次交付前的范围内修正；主模型复用证据并检查实际 diff 和集成结果。同步 runner 负责等待与收据，不反复读取进行中日志；普通文本补丁经主模型审查后用确定性工具应用，固定命令不单独派整合代理。详见[执行与整合](subagent-orchestrator/references/execution-flow.md)。
 
-[Spark 任务边界](subagent-orchestrator/references/spark-worker.md)覆盖定向读代码、已知原因的小修复、明确文字要求的 UI 调整、小函数、重复维护和指定测试/日志整理。架构、未知根因的判断、关键业务规则和最终验收由主 Agent 负责。测试任务必须明确命令、cwd 和预期结果，不能删测试或放宽断言来跑绿；图片先由主 Agent 转为文字要求，界面效果另行查看验收。
+最多每切片 3 次执行、整项任务共享 2 次恢复、同路线 1 次定向重试，首次交付后的修正计入恢复。执行失败和未知用量保留；runtime 并行与权限约束不因技能而放宽。
 
-**主任务里能选 Spark，不代表当前 subagent 工具支持 Spark。** 每次调用检查准确模型 `gpt-5.3-codex-spark` 和 medium 是否可用；不支持时记录原因并跳过，不创建新任务、CLI 或自定义配置来绕过。所有原生 worker 使用 `fork_turns: "none"`。
-
-完全明确的补丁应用和机械集成使用 **Spark（medium）→ Luna（medium）→ Terra（medium）→ 主 Agent**；Spark 不适用时跳过。独立验证走只读路线，实现 worker 可以运行自己的相关测试。会改写项目文件的测试需使用明确允许的隔离副本、现有执行 worker 或主 Agent。集成必须检查实际目标工作区的未提交状态；外部 runner 仅从已提交的 HEAD 启动。主 Agent 先审查具体 patch，再串行应用；语义冲突返回主 Agent。
-
-默认每个切片最多 3 次执行、每项用户任务共享最多 2 次恢复尝试，同一路线最多定向重试 1 次；达到任一上限后由主 Agent 接管。闸门检查失败且模型未启动不计执行，执行后失败和缺失用量必须记账。这些是主 Agent 的编排规则，单次 runner 不会自动强制跨 worker 预算。
-
-不会使用 Sol worker。只有根/主 Agent 可以调用 `spawn_agent`；每份 task packet 都明确禁止 worker 再委派。原生 spawn 前必须检查当前剩余并发位，且调用中必须填写 `model`、`reasoning_effort` 和 `fork_turns: "none"`。
-
-角色不要求拆成三个 worker：一个写入 worker 可以完成实现与相关测试，复用已有证据；主 Agent 只检查关键证据、实际 diff 和验收结果。原生工具若要求存在可并行的独立主工作，必须满足该要求；不满足时说明限制并接管。
+完整优化设计与后续 A/B/C 测量方案见[规划文档](docs/planning/technical-design.md)。新规则与工具不等于已经测得 Token 节省；旧全局强制委派规则仍优先，技能同步不修改全局 AGENTS.md。
 
 ### 怎么用
 

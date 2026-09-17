@@ -19,6 +19,8 @@ Keep entrypoint and actual model separate: Kimi CLI can use a configured model f
 
 ## Record Every Route Outcome
 
+Runners already wait and collect receipts. Follow `execution-flow.md`: launch once, use completion waits, and read the final compact result. Do not re-probe healthy providers, tail live reasoning or regenerate unchanged summaries for progress.
+
 Pass stable `--slice-id ID --attempt N` to either runner. Without a slice ID, the runner uses the task-packet digest prefix; supply an explicit ID across corrected packets so recovery history stays stable.
 
 Once a valid repository and safe, empty output directory exist, the runner creates `route.json`. Invalid arguments, unsafe/nonempty output paths or invalid repositories fail on stderr before creating diagnostics. The report records:

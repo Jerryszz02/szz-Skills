@@ -4,6 +4,8 @@ Use Spark as a focused scout or executor of an existing plan. This is a task-rou
 
 ## Runtime Gate
 
+Apply the work-mode gate before choosing this model. Fixed patch/check commands use deterministic tools; the integration role below is only for additional independently useful work that passed the gate.
+
 Use the exact model `gpt-5.3-codex-spark`, explicit `reasoning_effort: "medium"`, `fork_turns: "none"` only when the active subagent tool supports that combination. Medium is this skill's starting policy, not a benchmark result. Pro access or availability in the main-task model picker does not prove subagent availability. Do not create a separate user task, custom agent/config, or CLI workaround to force dispatch. Record a preflight skip, then follow the existing fallback and shared recovery budget.
 
 ## Suitable Slices

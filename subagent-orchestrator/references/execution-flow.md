@@ -1,0 +1,49 @@
+# Compact Execution Flow
+
+Use after choosing a delegated slice or root-approved mechanical integration. The manager owns decisions and acceptance; deterministic tools handle routine coordination.
+
+## One Owner Through Self-Check
+
+- Give one writer implementation and related verification. Include exact commands, scope and completion criteria in the original packet. It inspects its diff and fixes in-scope issues before first delivery; missing dependencies, interface changes and new requirements return to the manager.
+- Check cheap environment assumptions before dispatch. Supply existing dependency paths only after verifying them; share prepared acceptance commands where available. Do not independently rebuild elaborate test harnesses in every role.
+- Return status, changed paths, command/cwd/exit codes, unresolved criteria and artifact paths, normally within 250 words. Keep bulk logs and implementation files out of the reply.
+- Manager reviews actual diff and critical evidence, then checks the integrated state. Self-check does not replace final acceptance or required visual inspection. Repeat checks for changed state, failures or unresolved risks.
+- Post-delivery corrections retain the slice ID and consume recovery allowance. Reuse a native writer only when role/scope fit. External runners create a fresh HEAD-only attempt; never assume session resumption or visibility into uncommitted target changes. Do not loop indefinitely inside an attempt.
+
+## Wait Without Repeated Model Decisions
+
+DSH/Kimi runners are synchronous: each waits for the CLI, captures artifacts, checks scope and writes a receipt. Launch once. A tool returning a running session is not a failed worker or a reason to inspect logs.
+
+1. Prefer completion/event notification supported by the active runtime. For native workers use its wait API; for a running shell use the same session's wait/read API.
+2. Do independent manager work before waiting. When needed, use a bounded wait within current tool/instruction limits (at most 60 seconds per blocking wait on this host). Timeout keeps the same attempt; do not interleave clock calls, short sleeps, log tails and reasoning about unchanged progress.
+3. Read the compact final result once. Never read a live reasoning stream for progress. Inspect a specific log excerpt only after failure, meaningful change, a user status request or a deadline requiring a decision.
+
+This reduces avoidable model re-entry; it cannot add callbacks, eliminate mandatory wakeups or provide a hard token cap. Pending is not failed or free; interrupted/unknown launches remain counted. Before stopping/restarting anything, check ownership and current state.
+
+## Root-Approved Mechanical Integration
+
+Do not dispatch an agent merely to apply a patch, collect receipts or run fixed checks. After reviewing the exact patch and evidence, serialize target writers, record HEAD/dirty state, then invoke this helper from the skill directory:
+
+```bash
+python3 scripts/apply_approved_patch.py \
+  --cwd /absolute/target-repository \
+  --patch /absolute/artifacts/changes.patch \
+  --sha256 APPROVED_SHA256 \
+  --expected-head EXPECTED_FULL_HEAD \
+  --task-file /absolute/artifacts/task.md \
+  --apply
+```
+
+Omit `--apply` for check-only. The digest must identify what root actually reviewed; computing a digest is not approval. Reuse the original packet to preserve scope.
+
+Only ordinary text additions, edits and deletions are supported. The helper verifies hash, HEAD, patch-derived paths, packet scope, symlink boundaries, overlapping staged/unstaged/untracked/ignored data and Git applicability. Paths whose normalization changes their identity, case/Unicode aliases and touched paths with assume-unchanged/skip-worktree flags are conservatively rejected. It preserves unrelated dirty work and returns compact JSON. It never launches a model, runs verification commands or commits. Run the named checks on the integrated state afterward and batch concise results.
+
+Rejection needs manager diagnosis, not a fallback bypass. Binary files, rename/copy or mode changes require a separately reviewed procedure; semantic conflicts return to the manager. Serialize all target writers: this is not a cross-process lock or OS sandbox. No three-way merge, partial rejects, staging or automatic rollback.
+
+Only additional independently useful integration work should pass the gate and native mechanical route. External HEAD-only workers cannot validate uncommitted target integration.
+
+## Collect Once, Preserve Unknowns
+
+Reuse runner receipts rather than asking a model to reconstruct them. Native attempts use the existing scoped collector where authorized; otherwise record null usage with the runtime limitation. Keep receipts outside source and account for all launched, failed and corrective attempts.
+
+At task end run `summarize_usage.py` once. Newly completed attempts or corrected evidence justify refreshing it; unchanged progress does not. Measurement uses `usage-evaluation.md`; ordinary execution does not need the evaluation handbook.

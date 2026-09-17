@@ -6,11 +6,14 @@ Copy the following into your global `~/.codex/AGENTS.md` (or the effective Codex
 ## Delegation
 
 - The main agent owns requirements, planning, key decisions, and final acceptance.
-- When permitted by the runtime, delegate sustained repository exploration,
-  failure diagnosis, and independently verifiable implementation using
-  $subagent-orchestrator. Do not finish exploration before handing it off.
-- Handle known small edits, short supplied-code explanations, and bounded
-  deterministic checks directly. Reuse workers and evidence; avoid duplicate work.
+- Use $subagent-orchestrator to choose direct work, deterministic tools or
+  bounded delegation. Delegate independent work when compact handoff and
+  acceptance avoid repeating it; honor runtime restrictions.
+- Keep known small or tightly coupled work direct when handoff/acceptance would
+  reconstruct it. Reassess if scope grows. Let one worker implement and self-test;
+  use deterministic tools for waiting, receipts and approved patch application.
 - If no permitted route fits or recovery is exhausted, state the concrete reason
   and take over. Do not claim token or quota savings without complete measurements.
 ```
+
+An existing higher-priority policy that mandates delegation still governs until the user explicitly changes it. Updating or installing this skill does not silently replace that policy.

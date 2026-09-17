@@ -28,7 +28,7 @@ For a meaningful change to routing, use an isolated fixture and an independent p
 | Bounded source-writing implementation; all routes permitted and callable | DeepSeek first, with only required context. |
 | Source-writing work; DeepSeek unavailable before execution, Kimi callable | Kimi; preflight skip consumes no model execution. |
 | Source-writing work; external data transfer disallowed | Permitted native writing route; no workaround via another provider. |
-| Approved patches plus unrelated uncommitted edits | Eligible Spark medium, otherwise Luna medium, integration in target workspace, preserve unrelated edits, check combined state. |
+| Approved patches plus unrelated uncommitted edits | Root-reviewed deterministic integration in target workspace; preserve unrelated edits and check combined state. No worker solely for fixed commands. |
 | Spark appears in the main-task picker but not the active spawn tool | Skip it before execution; preserve DeepSeek/Kimi priority for writing and use role fallback. |
 | Two failures already consumed the whole task's recovery allowance | No further worker recovery, even if another provider remains available. |
 | Worker says tests passed but lacks command/cwd/results | Request evidence; do not accept the summary as verification. |
@@ -103,7 +103,7 @@ Malformed inputs and inconsistent totals return a nonzero exit with an error; in
 
 ## Before Dispatch: Predict Without Fabricating Savings
 
-Prefer delegation when the worker can consume substantial exploration, implementation or logs and return compact verifiable evidence that the manager will not reconstruct. Do not estimate numeric savings per task. Known small edits and bounded checks may cost less directly; the two-batch discovery limit is a starting policy, not an economic measurement. Use the task battery in `test-tasks.md` to calibrate it.
+Prefer delegation when a worker can consume substantial independent work and return compact evidence the manager will not reconstruct. Direct work is valid for known coupled tasks and cheap evidence; fixed commands use deterministic tools. No search-count threshold or invented numeric savings decides this. Use the task battery in `test-tasks.md` to calibrate the gate.
 
 Treat successful acceptance as a prerequisite. Track manager tokens, total tokens, latency and recovery separately; price/quota savings require their own valid accounting. Missing telemetry limits accounting, not native correctness acceptance.
 
@@ -118,3 +118,10 @@ A small benchmark can run before relying on daily production work:
 5. If main/native task counters are unavailable, report the measurement gap and provider subtotals only. A harness with scoped telemetry is needed for a defensible full comparison; account usage percentages cannot fill that gap.
 
 Synthetic fixtures and forward-tests can run without live repository mutation or external provider calls. A real A/B benchmark consumes real model usage and must stay within the user's authorized data/provider/task scope. Do not claim a measured saving from the offline suite.
+
+
+## Coordination Diagnostics
+
+Alongside receipts, record observed main-model unique response count and mean input, per-model cache/uncached/output, progress-only responses, handoffs and post-delivery repairs when the runtime exposes them. Missing fields stay unknown. These diagnostics explain overhead; they do not assign causal savings to a phase or infer price/quota. Sum cached input only once as part of input; reasoning output is already part of output. Avoid creating another model task solely to count deterministic receipt fields.
+
+For a strategy revision, use the A/B/C protocol in `test-tasks.md`: direct baseline, frozen previous policy and revised policy. Measure request reduction and acceptance together, not only raw totals dominated by repeated cached context. Do not automatically execute the live benchmark during a skill update.
