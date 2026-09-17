@@ -1,46 +1,32 @@
-# subagent-orchestrator 实施规划索引
+# subagent-orchestrator 规划索引
 
-## 文档目的
+## 来源与状态
 
-记录 `subagent-orchestrator` 替换旧外部 worker skill 后的调度契约，供实现、安装和复查使用。
-
-## 生成信息
-
-| 项目 | 内容 |
-| --- | --- |
-| 更新时间 | 2026-09-03 |
-| 项目根目录 | `/Users/jerryszz/Desktop/Projects/szzSkills` |
-| 任务 | 所有原生 spawn 前执行委派闸门，并建立 DeepSeek 优先的固定 fallback 顺序 |
+- 请求：基于 V8 A/B 分析完成优化计划并改进现有技能。
+- 模式：执行前准备与既有文档同步；更新日期：2026-09-17。
+- 项目根目录：`/Users/jerryszz/Desktop/Projects/szzSkills`。
+- 本项目是个人技能源仓库；本轮减少模型往返与交接，保留边界及计量。
+- 当前状态：本轮实现已通过 94 项自动化测试、10 个路由盲测场景、技能格式与文档检查，并完成本地安装同步；交付状态以 PR 记录为准，未声称已实测节省。
 
 ## 已检查证据
 
-| 证据 | 用途 |
-| --- | --- |
-| `AGENTS.md` | 确认 skill 布局、验证、分支交付和 secrets 边界。 |
-| `subagent-orchestrator/SKILL.md` | 确认委派闸门、角色顺序、主 Agent 所有权和验收流程。 |
-| `subagent-orchestrator/references/` | 确认路由、task packet、嵌套委派禁令和外部 worker 契约。 |
-| `subagent-orchestrator/scripts/` | 确认 DSH/Kimi worktree、路径 scope、artifact 和测试行为。 |
-| 本机 `dsh --profile headless --help` 与可用性探针 | 确认 headless profile 可从命令行执行单次任务。 |
+`AGENTS.md`、根 README、技能与 references、同步脚本、两个同步外部 runner、task packet scope 校验及 receipt/usage 测试。起点为本次刷新的 `origin/main`（`5b49901`）。历史 A/B 仅以汇总数字说明动机，原始会话与 provider 日志留在仓库外。
 
 ## 文档清单
 
-| 文档 | 用途 |
+| 文档 | 维护职责 |
 | --- | --- |
-| `technical-design.md` | 固化委派闸门、fallback、并发检查、task packet、worker receipt 和 runner 契约。 |
-| `security-privacy.md` | 记录外部进程、secrets、worktree 和主 Agent 审查边界。 |
-| `test-plan.md` | 记录 skill 校验、runner 单元测试和 live profile 探针。 |
+| [technical-design.md](technical-design.md) | 完整优化计划、委派门槛、执行责任、确定性整合及后续 A/B/C 方案 |
+| [test-plan.md](test-plan.md) | 自动化、路由盲测、安装验收和节省结论边界 |
+| [security-privacy.md](security-privacy.md) | 外部执行、凭据、patch 审查和本地数据保护 |
 
-## 已跳过文档
+[根 README](../../README.md)面向使用者；[技能入口](../../subagent-orchestrator/SKILL.md)及 references 是运行时契约，脚本和测试证明实现。本目录保留需求与设计基线，事实冲突以代码为准。
 
-| 文档 | 跳过原因 |
-| --- | --- |
-| `prd.md` | 本次是内部调度契约调整，不新增终端产品行为。 |
-| `architecture.md` | 结构和执行流已足够集中在技术设计。 |
-| `api-design.md` | 不新增网络服务 API。 |
-| `database-design.md` | 不涉及持久化 schema。 |
-| `release-plan.md` | 仅通过仓库 PR 和本地 skill 同步交付。 |
-| `operations-runbook.md` | 不包含长期运行服务。 |
+未新增 PRD、独立架构/API/数据库/发布/运维文档：现有 CLI 契约可集中在技术设计，无服务、数据库或部署。未新增开发者指南，避免重复 references。
 
-## 待确认
+## 验证与待确认
 
-- Skill 指令可以约束遵循它的 Agent，但不是 `spawn_agent` 工具层的强制拦截器；若未来需要不可绕过的强制策略，应在 Codex runtime 或全局 Agent 指令层实现。
+验证日期为 2026-09-17；命令与本次结果见 [测试计划](test-plan.md)。发布状态以 GitHub PR 为准；加载状态以新任务/重启后的 registry 为准，不以复制成功代替。
+
+- 待验证：新版在真实任务中的 Token/费用效果；本轮不自动启动付费 benchmark。
+- 采用限制：全局 AGENTS.md 不随技能同步更改；已有强制委派规则需由用户另行决定是否采用新模板。

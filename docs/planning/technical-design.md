@@ -1,51 +1,67 @@
-# subagent-orchestrator 技术设计
+# subagent-orchestrator 优化计划与技术设计
 
-## 目标
+## 目标与证据
 
-把“是否委派”和“委派给谁”拆成两个顺序决策：每个准备调用 `spawn_agent` 的任务先通过 Delegation Gate；通过后按角色选择 worker；写入保持 DeepSeek、Kimi、Spark、Luna、Terra 的顺序，永不使用 Sol worker。
+2026-09-17，基于用户确认的三个方向改进现有技能：减少模型参与等待与机械整合、让同一执行器完成实现及相关自检、按交接与验收成本选择是否委派。本文件是设计基线；实际行为以技能、脚本和验证为准。
 
-## 调度契约
+历史 V8 单文件网页试验中，A/B 主模型请求分别为 22/56 次，主模型累计 Token 为 1,858,483/5,437,397，全模型累计为 1,858,483/11,465,157，均含缓存。B 主模型输出更少，但请求更多；出现进度轮询、额外整合代理、主模型返工和环境故障。这是一对有环境干扰的历史样本，不是稳定节省率。原始私有日志不入库。
 
-1. 根/主 Agent 识别依赖、ownership、验收命令和风险。
-2. 小型、强耦合、顺序依赖、高风险或直接完成更便宜的任务不委派。
-3. 外部 worker 依次尝试 DeepSeek 和 Kimi；两者均不能使用时才尝试原生 Spark、Luna、Terra；Spark 只接明确方案的小块任务。
-4. 只有根/主 Agent 可以调用 `spawn_agent`。调用前通过 `list_agents` 读取实时占用，并根据当前 runtime 的并发上限计算剩余位。
-5. 原生 worker 显式设置模型和推理强度；Spark 使用 medium，Luna 只读使用 low，原生写入使用 medium；`fork_turns` 使用 `none`，完整上下文由 task packet 提供。
-6. 每份 task packet 都要求 `Nested delegation: forbidden`，禁止 worker 调用 `spawn_agent` 或继续委派。
-7. 主 Agent 审查输出、diff 和验证结果，负责集成与最终验收。
-8. 所有 worker 使用同一 receipt schema，记录任务、实际模型、推理档位、fork 范围、状态和 runtime token。
+目标是在相同验收标准下减少主模型往返与重复理解；分别衡量主模型 Token、全模型 Token、缓存/未缓存输入、输出、耗时与返工。不能把便宜模型、离线测试通过或更短说明当作节省证明。
 
-## 写入 fallback
+## 方案与任务拆分
 
-| 顺序 | Worker | 可用性与调用要求 |
+| 阶段 | 改动 | 可验收结果 |
 | --- | --- | --- |
-| 1 | DeepSeek Harness | `dsh` 可执行，`dsh --profile headless --help` 成功，任务通过外部 worker 安全边界与 runner preflight。 |
-| 2 | Kimi Code | `kimi` 可执行，任务通过相同安全和 packet 边界。 |
-| 3 | Spark | `model="gpt-5.3-codex-spark"`；`reasoning_effort="medium"`；任务符合 Spark 边界且当前 spawn 工具支持，否则跳过。 |
-| 4 | Luna | `model="gpt-5.6-luna"`；写入 `reasoning_effort="medium"`。 |
-| 5 | Terra | `model="gpt-5.6-terra"`；写入 `reasoning_effort="medium"`。 |
+| 1：先选工作方式 | 按隔离性、交接材料、验收难度和真实并行机会判断 direct / deterministic / delegate；移除“两批搜索就必须委派” | 小改动、强耦合已知工作、短日志与固定命令不产生仪式性 worker；独立工作仍能尽早委派 |
+| 2：合并执行责任 | 一个 worker 负责同一切片实现、相关测试及首次交付前的范围内修正 | 不强制 scout → implementer → integrator → verifier；主模型保留方案与最终验收 |
+| 3：确定性协调 | 复用同步 runner 等待及 receipt；主模型调用受约束的 patch CLI | 不读进行中的 reasoning 日志、不反复问进度；普通文本补丁无需单独整合代理 |
+| 4：按需上下文 | 根 SKILL 只做入口和条件路由；协调细节按需读 | 普通执行不读评测手册和测试矩阵，不重复读取已加载参考 |
+| 5：验证与交付 | 离线回归、盲测路由、文档审计、安装同步、分支 PR | 边界不退化；实测节省单独标为待验证 |
 
-定向只读取证使用 Spark medium → Luna low → 主 Agent；更广泛的只读分析保持 Luna low → 主 Agent。完全明确的机械集成使用 Spark medium → Luna medium → Terra medium → 主 Agent。不将主任务模型列表当作 subagent 可用性证明。详细边界见 [Spark worker](../../subagent-orchestrator/references/spark-worker.md)。
+## 委派判定
 
-原生 spawn 同时设置 `fork_turns="none"`。如果没有剩余并发位，不调用 `spawn_agent`，而是等待、排队或由主 Agent 完成。
+先遵循用户显式选择、上级指令、数据授权与 runtime 约束。主模型保持需求、架构、风险判断、语义冲突和最终验收所有权。
 
-## 外部 runner
+在进一步展开工作前简短回答：执行器能独立完成哪一块？只需哪些材料？如何凭少量证据验收而不重走完整过程？没有可隔离结果、已掌握全部局部改法、验收几乎等于重做、或剩余只是固定命令时，直接完成或调用确定性工具。大范围独立取证/实现、清晰测试契约和紧凑结果支持委派。只给具体理由，不编造 Token 盈亏阈值。
 
-`run-dsh-worker.sh` 和 `run-kimi-worker.sh` 接受绝对 `--cwd`、`--task-file` 和仓库外空 `--output-dir`。两者均：
+初始探索保持小范围，但不以搜索次数决定经济性。失败扩大范围时重新判定；不把“直接”当作无限探索许可，也不为原生并行限制编造主任务。强制委派的上级策略仍优先，实际采用时需核对全局策略。
 
-- 校验 task packet 必需章节、HEAD-only 声明、嵌套委派禁令和允许/禁止路径；
-- 拒绝与主工作区允许路径上的未提交改动重叠；
-- 从当前 `HEAD` 创建 detached worktree；
-- 保存状态、changed paths、binary patch、退出码、scope 结果和 manifest；
-- 生成 `worker-receipt.json`；Kimi 从 session wire 提取实际响应模型、thinking effort 和逐步 usage，DSH 从有效 headless model 与 session totals 提取；
-- 不创建 branch/commit，不自动应用 patch，完成后清理 worktree。
+决定委派后保留顺序：定向只读 Spark medium → Luna low → 主模型；广泛只读分析 Luna low → 主模型；写入 DeepSeek → Kimi → Spark → Luna → Terra，原生写入 medium。Spark 不符合边界或 runtime 不支持时跳过。禁止 Sol、完整父会话继承和嵌套委派。
 
-DeepSeek runner 额外保存 `final.txt` 和 `reasoning.log`；Kimi runner 保存 `events.jsonl` 和 `stderr.log`。
+## 同一执行器交付
 
-## 验收标准
+切片包含可验证结果、允许路径、所需上下文、精确检查命令及产物目录。执行器首次完成回复前自查 diff、运行相关测试、修正授权范围内问题；环境、接口、需求或安全边界问题立即返回主模型。不允许无限自修绕过 runner/runtime 限制。
 
-- `quick_validate.py` 通过。
-- DSH 与 Kimi runner 单元测试通过。
-- task packet 对缺失或非 `forbidden` 的嵌套委派声明失败。
-- Kimi manifest 记录实际模型、推理档位和完整 usage；成功运行缺少任一项时以 metadata-incomplete 失败。
-- 文档不存在 Sol worker 路由，并明确原生模型、推理强度、并发位检查和 root-only spawn。
+主模型仍检查实际 diff、关键证据和当前集成状态，不只相信“通过”。首次交付后的修正使用同一 slice，遵守最多 3 次执行、任务共享 2 次恢复、同一路线最多 1 次定向重试。原生 worker 复用须保持权限/角色；外部 runner 不假装支持 session 恢复，后续尝试仍满足 HEAD-only 与脏路径限制。
+
+## 等待、整合与收据
+
+现有两个外部 runner 是同步入口，已经等待 provider 并导出 patch、scope、manifest、receipt。保持一次启动与原有完成通知，不新增 daemon、轮询服务或状态机。长输出放仓库外；工具返回运行中 session 后，优先完成独立主工作，再使用现有等待工具获取完成结果。等待遵守工具时限，不用多次时钟、sleep、tail/log 查询驱动模型循环；恢复或诊断时才读局部日志。
+
+主模型审过具体 patch 后，使用 `scripts/apply_approved_patch.py`：
+
+- 显式绑定仓库根目录、完整起始 HEAD（SHA-1 40 位或 SHA-256 64 位）、patch SHA-256 和原任务 scope；HEAD 必须精确匹配，默认只检查，`--apply` 才写入。
+- 只读一次 patch 字节，校验 hash，将同一字节送入 Git 路径解析、可应用性检查与应用，避免重复读取变动的 patch。
+- 第一版仅支持普通文本文件增删改，包括已有可执行文本的纯内容修改和删除；仍拒绝新增可执行文件、二进制、重命名/复制、权限变更、软链接、submodule；不隐式降级。
+- 从 patch 提取路径，拒绝越界、`.git`、软链接路径、与 staged/unstaged/untracked/ignored 数据重叠的修改；保留无关改动。
+- 应用前重查 HEAD 和脏路径；不用 `--3way`、`--reject`、`--index` 或自动回滚。主模型串行协调写入，helper 不是跨进程锁或 OS 沙箱。
+- 返回紧凑 JSON 与退出码；不启动模型，不执行 patch 内容或测试命令，不创建 commit。
+
+helper 拒绝时先读原因，不用整合代理绕过保护。确实需要独立整合工作时重新通过门槛，再用 Spark medium → Luna medium → Terra medium → 主模型；语义冲突仍由主模型决定。
+
+收据沿用现有 schema 与 collector/aggregator。结束时批量汇总一次；失败、恢复及缺失 telemetry 必须保留，未知不是零。执行器只返回紧凑结果与证据索引，不回传全部日志。
+
+## 兼容、非目标与采用
+
+- 不更改 provider 顺序、外部 HEAD-only/worktree 隔离、凭据边界、恢复预算、receipt schema。
+- 不修改全局 AGENTS.md，只更新可选模板。上级强制委派规则不能由技能覆盖；采用新门槛需另行明确授权更新全局策略。
+- 不新增价格假设、自动额度消耗、付费 A/B 任务、后台服务或自动合并 PR。
+- 同步前保留有差异的安装副本，随后同步、验证、提交 ready PR；重启 Codex 才重新加载 registry。回退时从选定旧提交导出整份 skill，审查后同步，不重置无关工作。
+
+## 验收与后续测量
+
+见 [测试计划](test-plan.md)。这版先验证规则与工具行为，不宣称已省 Token。
+
+后续测量采用 A 独立完成、B 冻结旧技能、C 新技能，固定任务正文、起始提交、依赖、主模型档位及验收标准。覆盖小改动、独立查证、可隔离功能、强耦合页面；保留 C 选择直接完成的结果。先验证浏览器和依赖；顺序轮换、各类多次重复，所有失败与环境干扰单列而不删除。
+
+报告主模型请求数、平均输入、各模型缓存/未缓存/输出、总量、等待/派工/返工次数、验收质量与耗时。只有代表性任务质量不退化且目标指标改善，才能支持该任务类型采用；混合结果按任务类型调整门槛，不平均掩盖退化。真实试验需另行获得任务和费用范围授权。

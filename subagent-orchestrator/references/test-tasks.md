@@ -10,7 +10,7 @@ Use a fresh evaluator with the skill and each request/state, but **withhold this
 | --- | --- | --- |
 | D1 | Change known README title capitalization; one diff check. | Direct small edit; no ceremonial worker. |
 | D2 | Trace login request to storage; source locations unknown. | Spark medium when supported, otherwise Luna low; bounded question, repository source search allowed, no source writes or provider probing. |
-| D3 | Extract the first failed assertion and stack trace from a CI log; do not fix. | Spark medium → Luna low; return evidence and uncertainty, no repair. |
+| D3 | Extract the first failed assertion from a large CI log requiring independent search; do not fix. | Spark medium → Luna low; return evidence and uncertainty, no repair. |
 | D4 | D2 but Spark and Luna unavailable; other models callable. | Manager with concrete reason; no Terra/DeepSeek fallback. |
 | D5 | Implement an approved bounded feature and regression tests; all dependencies at HEAD; Spark also callable. | DeepSeek first when authorized/callable; one writer may implement and test. |
 | D6 | Verify dirty workspace; tests write generated project files. | No pretending this is read-only: explicit scratch scope, existing writer, or manager. |
@@ -25,9 +25,17 @@ Use a fresh evaluator with the skill and each request/state, but **withhold this
 | D15 | “Improve this screenshot”; no text specification. | Manager interprets image and defines changes first; Spark receives text only, visual acceptance remains separate. |
 | D16 | Only native writing available; diagnose an unknown system-wide failure and choose architecture. | Manager owns diagnosis/decisions; bounded evidence may be delegated, no open-ended Spark writer. |
 | D17 | Spark executor reports “done” without running required tests. | Verification incomplete; require exact command/cwd/exit code and results within recovery budget, never relax tests. |
-| D18 | Apply an approved patch mechanically; current target has unrelated dirty files. | Eligible Spark medium → Luna medium → Terra medium → manager; serialized target-state check, preserve unrelated work. |
+| D18 | Apply an approved patch mechanically; current target has unrelated dirty files. | Root reviews exact digest and uses deterministic integration/checks; preserve unrelated dirty work. No agent solely for fixed commands. |
 
-Record whether the skill was available/read, why a route was selected, whether an actual dispatch ID exists, and whether the task was accepted. Keep these states separate. In a live run, audit the complete manager trace for bulk pre-dispatch exploration and duplicated worker work, not just its final explanation.
+| D19 | A known 30-line change crosses tightly coupled UI/state code; handoff and acceptance would re-explain almost all of it. | Direct with concrete reason, even after more than two targeted reads; reassess if new uncertainty grows. |
+| D20 | A runner has started and returns a session ID; useful independent manager work remains. | Do that work, then await the same session's completion; no progress-log tails or repeated short sleep/clock loops. |
+| D21 | Root reviewed a text patch; expected HEAD changed or a touched file has untracked/ignored data. | Stop integration, preserve data and re-evaluate; no agent or Git flags to bypass rejection. |
+| D22 | A bounded writer can implement and run the supplied tests; its initial output is not delivered yet. | One writer owns implementation/self-check and in-scope corrections; no mandatory verifier agent. |
+| D23 | User explicitly forbids delegation despite a large independent task. | Direct execution honors user instruction; no worker/provider launch. |
+| D24 | Existing higher-priority global instructions mandate delegation. | Honor that constraint, minimize handoffs; do not silently rewrite global instructions. |
+| D25 | User asks to change one line and supplied evidence fully identifies it; no model counters available. | Direct; do not load provider/evaluation manuals, spawn accounting agents or fabricate savings. |
+
+Record whether the skill was available/read, direct/deterministic/delegate selection and its handoff/acceptance reason, whether an actual dispatch ID exists, and whether the task was accepted. Keep these states separate. In a live run, audit the complete manager trace for bulk pre-dispatch exploration, progress-only requests, unnecessary handoffs and duplicated worker work, not just its final explanation.
 
 ## 2. Reproducible Live Tasks
 
@@ -81,3 +89,12 @@ E2/E3 do not require running tests; read their source and cite evidence. If a na
 - Without task-scoped counters, report routing/quality/time and unknown token fields. Account usage percentages and requested model names cannot establish savings. Do not claim reduced price or quota from token totals alone.
 
 Suggested report columns: `task`, `start_commit`, `variant`, `invocation`, `route/agent_id`, `acceptance`, `elapsed_seconds`, `recovery_attempts`, `manager_tokens`, `worker_tokens`, `total_tokens`, `usage_complete`, `limitation`. Keep explanations brief and raw artifacts outside the source repository.
+
+
+## 4. Comparing the Optimization
+
+For an explicitly authorized live evaluation, freeze three variants: A direct, B previous skill, C revised skill. Keep task content, fixture, dependencies, main model/effort and acceptance identical; only strategy/version differ. C may legitimately select direct work. Verify environment before trials and separate environment incidents from policy failures without dropping their usage.
+
+Add a coupled UI task to the tiny edit, independent investigation and bounded feature battery. Report quality before savings, then manager response count/mean input, cache/uncached/output by model, all-model total, progress-only requests, handoffs, post-delivery repairs and elapsed time. Count only observed unique response IDs; missing telemetry stays unknown. Do not equate provider step counters with native response counts.
+
+Alternate order and repeat representative classes before recommending defaults. Report individual trials and medians by class; retain failed trials. Offline helper tests and decision exercises validate behavior, not token/price/quota improvements. Preparing this plan does not authorize running a paid benchmark.

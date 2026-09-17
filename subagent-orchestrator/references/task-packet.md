@@ -45,6 +45,8 @@ forbidden
 yes
 ```
 
+Include implementation, related tests and in-scope self-correction in one writer's responsibility. Name available acceptance commands/dependencies so it can self-check before first delivery. Return unresolved environment/interface decisions to root. Put prose in Dependencies, not among Allowed/Forbidden path bullets; validate the packet once before launch. See `execution-flow.md` for waiting, handoffs and recovery accounting.
+
 ## Native Worker Additions
 
 For Spark, first apply `spark-worker.md`; keep DeepSeek/Kimi ahead of it on source-writing routes. Also state:
@@ -55,6 +57,7 @@ For Spark, first apply `spark-worker.md`; keep DeepSeek/Kimi ahead of it on sour
 - `fork_turns: "none"`; put all required context in the task packet instead of replaying parent history.
 - Read-only or workspace-write permission, absolute target workspace, permitted read scope and owned write paths.
 - For integration: starting HEAD/dirty-path inventory, exact root-approved patch paths and digests, writer dependencies, required commands, and log destinations. Verification-only packets prohibit source repairs.
+- Do not create an integration packet solely for fixed patch/check commands: root invokes deterministic tools. Additional independently useful integration must pass the work-mode gate.
 - State `HEAD-only dependency: no` when inspecting current uncommitted changes. Native packets are not passed through the external HEAD-only validator.
 - Expected response sections: status, changed paths, result, exact checks/exit codes, blockers, artifact pointers; target at most 250 words of final prose and save bulk logs to artifacts.
 - Attempt number and remaining recovery allowance; workers report failures instead of spawning retries or silently expanding repairs.

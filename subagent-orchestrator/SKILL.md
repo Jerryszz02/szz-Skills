@@ -1,34 +1,40 @@
 ---
 name: subagent-orchestrator
-description: Delegate repository exploration, behavior tracing, debugging, implementation, fixes, refactors, code review, and test or CI failure analysis. Use before substantial coding execution or intended subagent calls, even without an explicit delegation request. Known tiny edits, short supplied-code explanations, and simple verification may stay with the main agent.
+description: Choose direct execution or bounded delegation for repository investigation, implementation, and verification. Use when coordinating workers or deciding whether substantial independent work benefits from delegation; routine edits and explanations can stay direct.
 ---
 
 # Subagent Orchestrator
 
-Keep the selected main model responsible for requirements, planning, key decisions, and final acceptance. Only the root may delegate; prohibit nested delegation. Do not switch the main model or use Sol workers.
+The selected main model owns requirements, planning, key decisions and final acceptance. Only root delegates; prohibit nested delegation, Sol workers and full parent-history forks.
 
-## Decide Before Exploring
+## Choose the Work Mode
 
-Read repository instructions and Git state, then use at most two small, targeted discovery batches to locate the task. This is an initial operating limit, not a measured token break-even point; never expand a batch into a bulk repository read to evade it.
+Inspect instructions/Git state and use small targeted reads. Before sustained work, identify the result a worker could own, its minimum context, and how to accept it without reconstructing the work. No fixed search count or invented token threshold decides this gate.
 
-When a permitted worker can own a bounded result, **delegate sustained exploration, failure diagnosis, and independently verifiable implementation** before doing that work yourself. Direct completion is allowed for a known small local edit, a short supplied-code explanation, or a deterministic check with bounded output. Keep decisions and focused acceptance checks with the manager. State a concrete exception, runtime restriction, or exhausted recovery budget when taking over; do not justify substantial direct work merely with “handoff is expensive.”
+- **Direct:** known local edits, short explanations, tightly coupled work whose handoff and acceptance would repeat most of the solution.
+- **Deterministic:** fixed commands, waiting, receipt collection and approved patch application.
+- **Delegate:** substantial independent evidence or implementation with bounded ownership and compact, verifiable results. Delegate before completing that work yourself.
 
-Use one cohesive responsibility per worker and reuse accepted evidence. Scout, executor, and verifier are roles, not a mandatory three-worker pipeline. Delegate dependent work only when the active tool permits it; native dispatch may require independent work alongside useful manager work. Instructions cannot override runtime restrictions.
+Give a brief concrete reason and reassess when scope/failures grow. Explicit user choices, higher-priority rules and runtime restrictions take precedence. Do not manufacture parallel work to satisfy native dispatch requirements.
 
 ## Select the Route
 
-- **Read-only work:** bounded text/code evidence uses **Spark (`medium`) → Luna (`low`) → manager**; broader review/failure analysis stays Luna (`low`) → manager. Read [spark-worker.md](references/spark-worker.md) for eligibility and [read-only-worker.md](references/read-only-worker.md) for the packet. No external provider or Terra fallback.
-- **Source-writing implementation, fixes, tests and documentation:** **DeepSeek → Kimi → Spark → Luna → Terra**; keep DeepSeek first. Spark is only for an explicit, bounded plan and is skipped otherwise. Native writing uses `medium`. Read [routing-guide.md](references/routing-guide.md) and the external or native-writing section of [task-packet.md](references/task-packet.md).
-- **Patch application and mechanical integration:** **Spark (`medium`) → Luna (`medium`) → Terra (`medium`) → manager**, in the actual target workspace. Skip Spark unless integration is fully specified and mechanical. Read the integration contract in [routing-guide.md](references/routing-guide.md). Verification-only work uses the read-only route; an executor may run its own relevant tests without a new worker.
+- **Read-only:** bounded evidence uses Spark (`medium`) → Luna (`low`) → manager; broader review/failure analysis starts at Luna. Read [spark-worker.md](references/spark-worker.md) for eligibility and [read-only-worker.md](references/read-only-worker.md) for the packet. No external provider or Terra fallback.
+- **Writing:** DeepSeek → Kimi → Spark → Luna → Terra; DeepSeek stays first. Spark needs an explicit bounded plan; native writers use `medium`. Read [routing-guide.md](references/routing-guide.md) and the relevant [task-packet.md](references/task-packet.md) section.
+- **Approved patch and fixed checks:** manager invokes deterministic tools per [execution-flow.md](references/execution-flow.md). Additional independently useful mechanical integration must pass the gate before using Spark (`medium`) → Luna (`medium`) → Terra (`medium`) → manager. Semantic conflicts stay with the manager.
 
-Immediately before every native spawn, call `list_agents`, check the live tool's supported models/efforts, restrictions and remaining capacity, and queue if full. Pass explicit model, effort, `fork_turns: "none"`, and the route's packet. Do not create custom agent/config files.
+Immediately before native spawn, call `list_agents`, check live model/effort support and capacity, then pass explicit model, effort, `fork_turns: "none"` and the packet. Do not create custom agent/config files or bypass unavailable routes.
 
-## Accept and Account
+## Execute and Accept
 
-Announce the delegated responsibility and manager-owned decisions; record the returned agent ID or runner artifact directory, stable slice/attempt, and skipped-route reasons. Default limits: three attempts per slice, two recovery attempts across the task, one targeted retry per route. Follow-ups that repair a failed criterion count as recovery; a read-only worker must not silently become a writer.
+Use one cohesive writer for implementation, related tests and in-scope self-correction before first delivery. Reuse evidence; no mandatory scout/implementer/integrator/verifier pipeline. Read [execution-flow.md](references/execution-flow.md) once for waiting and integration. Do not repeatedly query clocks, live logs or unchanged progress; keep bulk evidence in artifacts.
 
-Accept from cited evidence, actual diffs, and exact verification results, not a completion claim. Authorize external patches before serialized integration; preserve unrelated work. Avoid repeating a worker's full exploration or broad tests without new evidence.
+Record the actual dispatch ID/artifact directory, stable slice/attempt and skipped routes. Preserve limits of three attempts per slice, two task recoveries and one targeted same-route retry; post-delivery corrective follow-ups count. Read-only workers never gain implicit write permission.
 
-Keep a receipt per attempt: external runners generate it; the manager records native runtime evidence. Use [provider-diagnostics.md](references/provider-diagnostics.md) for executable discovery, recorded skips, and token collection; use [worker-receipt.md](references/worker-receipt.md) for the receipt contract. Missing actual-model or token evidence remains unknown and does not by itself invalidate native correctness. Never infer savings from worker count, requested model, text length, or account percentages.
+Review actual diffs and focused evidence. Authorize the exact external patch before serialized integration, preserve unrelated data and check the integrated state. Root retains final acceptance; repeat broad checks only for changed state, failures or unresolved risks.
 
-For measurement and evaluation, read [usage-evaluation.md](references/usage-evaluation.md) and [test-tasks.md](references/test-tasks.md). For the optional user-installed global policy, use [global-policy.md](references/global-policy.md); do not modify global instructions automatically.
+## Account and Load on Demand
+
+Keep a receipt per attempt and aggregate at task end. External runners generate receipts; native collection follows [provider-diagnostics.md](references/provider-diagnostics.md) and [worker-receipt.md](references/worker-receipt.md). Unknown model/usage stays unknown; cheaper model names and shorter text do not prove savings.
+
+Read only references required by the selected route, not the entire directory. Read [usage-evaluation.md](references/usage-evaluation.md) and [test-tasks.md](references/test-tasks.md) only for measurement/evaluation. [global-policy.md](references/global-policy.md) is an optional installation template; never modify global instructions automatically.
