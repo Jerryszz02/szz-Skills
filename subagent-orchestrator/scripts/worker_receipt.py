@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build auditable worker receipts from native, DSH, or Kimi runtime evidence."""
+"""Build auditable worker receipts from native or DSH runtime evidence."""
 
 from __future__ import annotations
 
@@ -11,20 +11,6 @@ from pathlib import Path
 from typing import Any
 
 from task_packet import nonempty_lines, parse_sections
-
-
-def read_json_lines(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            value = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(value, dict):
-            rows.append(value)
-    return rows
 
 
 def task_details(path: Path) -> dict[str, str]:
@@ -108,77 +94,6 @@ def receipt(
     }
 
 
-def kimi_evidence(events_file: Path, session_index: Path) -> tuple[list[str], list[str], dict[str, Any], dict[str, Any]]:
-    events = read_json_lines(events_file)
-    session_ids = [
-        row.get("session_id")
-        for row in events
-        if row.get("type") == "session.resume_hint"
-    ]
-    session_id = next((value for value in reversed(session_ids) if isinstance(value, str)), None)
-    if session_id is None:
-        return [], [], usage_record(
-            uncached_input=None,
-            cache_read=None,
-            cache_write=None,
-            output=None,
-            source="kimi-session-wire: session id unavailable",
-        ), {"session_id": None, "wire_file": None}
-
-    session_dir: Path | None = None
-    try:
-        index_rows = read_json_lines(session_index)
-    except (OSError, UnicodeError, json.JSONDecodeError):
-        index_rows = []
-    for row in reversed(index_rows):
-        if row.get("sessionId") == session_id and isinstance(row.get("sessionDir"), str):
-            session_dir = Path(row["sessionDir"])
-            break
-    wire_file = session_dir / "agents/main/wire.jsonl" if session_dir else None
-    if wire_file is None or not wire_file.is_file():
-        return [], [], usage_record(
-            uncached_input=None,
-            cache_read=None,
-            cache_write=None,
-            output=None,
-            source="kimi-session-wire: wire file unavailable",
-        ), {"session_id": session_id, "wire_file": None}
-
-    rows = read_json_lines(wire_file)
-    request_rows = [row for row in rows if row.get("type") == "llm.request"]
-    actual_models = unique_strings([row.get("model") for row in request_rows])
-    if not actual_models:
-        actual_models = unique_strings(
-            [row.get("model") for row in rows if row.get("type") == "usage.record"]
-        )
-    reasoning_efforts = unique_strings([row.get("thinkingEffort") for row in request_rows])
-    usage_rows = [
-        row.get("usage")
-        for row in rows
-        if row.get("type") == "usage.record"
-        and row.get("usageScope") == "turn"
-        and isinstance(row.get("usage"), dict)
-    ]
-    if usage_rows:
-        uncached_input = sum(int(row.get("inputOther", 0)) for row in usage_rows)
-        cache_read = sum(int(row.get("inputCacheRead", 0)) for row in usage_rows)
-        cache_write = sum(int(row.get("inputCacheCreation", 0)) for row in usage_rows)
-        output = sum(int(row.get("output", 0)) for row in usage_rows)
-    else:
-        uncached_input = cache_read = cache_write = output = None
-    usage = usage_record(
-        uncached_input=uncached_input,
-        cache_read=cache_read,
-        cache_write=cache_write,
-        output=output,
-        source="kimi-session-wire",
-    )
-    return actual_models, reasoning_efforts, usage, {
-        "session_id": session_id,
-        "wire_file": str(wire_file),
-    }
-
-
 def recursive_strings(value: Any, names: set[str]) -> list[str]:
     found: list[str] = []
     if isinstance(value, dict):
@@ -256,13 +171,6 @@ def main() -> int:
         command.add_argument("--output", type=Path, required=True)
         command.add_argument("--status", required=True)
 
-    kimi = subparsers.add_parser("kimi")
-    common(kimi)
-    kimi.add_argument("--events-file", type=Path, required=True)
-    kimi.add_argument("--session-index", type=Path, required=True)
-    kimi.add_argument("--requested-model", default="")
-    kimi.add_argument("--require-complete", action="store_true")
-
     dsh = subparsers.add_parser("dsh")
     common(dsh)
     dsh.add_argument("--session-root", type=Path, required=True)
@@ -281,28 +189,6 @@ def main() -> int:
     native.add_argument("--output-tokens", type=int)
 
     args = parser.parse_args()
-    if args.command == "kimi":
-        actual_models, efforts, usage, evidence = kimi_evidence(args.events_file, args.session_index)
-        value = receipt(
-            worker="kimi",
-            task_file=args.task_file,
-            requested_model=args.requested_model or None,
-            actual_models=actual_models,
-            reasoning_efforts=efforts,
-            fork_turns="not-applicable",
-            context_scope="HEAD-only detached worktree",
-            status=args.status,
-            usage=usage,
-            evidence=evidence,
-        )
-        write_receipt(args.output, value)
-        if args.require_complete and (
-            value["actual_model"] is None
-            or value["reasoning_effort"] is None
-            or not usage["available"]
-        ):
-            return 1
-        return 0
     if args.command == "dsh":
         actual_models, efforts, usage, evidence = dsh_evidence(
             args.session_root,

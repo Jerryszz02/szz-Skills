@@ -6,13 +6,24 @@ Use after choosing a delegated slice or root-approved mechanical integration. Th
 
 - Give one writer implementation and related verification. Include exact commands, scope and completion criteria in the original packet. It inspects its diff and fixes in-scope issues before first delivery; missing dependencies, interface changes and new requirements return to the manager.
 - Check cheap environment assumptions before dispatch. Supply existing dependency paths only after verifying them; share prepared acceptance commands where available. Do not independently rebuild elaborate test harnesses in every role.
-- Return status, changed paths, command/cwd/exit codes, unresolved criteria and artifact paths, normally within 250 words. Keep bulk logs and implementation files out of the reply.
+- Writers return [worker-result.json](worker-result.md): reported outcome, changed paths, command/cwd/exit codes, unresolved criteria and evidence references. Keep bulk logs and implementation files outside the reply; read-only evidence can retain its compact prose format.
 - Manager reviews actual diff and critical evidence, then checks the integrated state. Self-check does not replace final acceptance or required visual inspection. Repeat checks for changed state, failures or unresolved risks.
-- Post-delivery corrections retain the slice ID and consume recovery allowance. Reuse a native writer only when role/scope fit. External runners create a fresh HEAD-only attempt; never assume session resumption or visibility into uncommitted target changes. Do not loop indefinitely inside an attempt.
+- Self-check remains part of first delivery. Passing final acceptance ends the slice; do not add a routine second worker review or repeat unchanged broad checks.
+
+## Correct an Actual Acceptance Failure
+
+After delivery, classify the evidence before choosing another execution:
+
+- A concrete local defect or missing verification in the original scope: prefer the original native writer when it remains available, its permissions/role still fit, and the active runtime permits continuation. Use that runtime's follow-up operation with the recorded agent ID/name, not a new spawn or a full replay of the packet. Send the unmet criterion, focused reproduction/evidence, relevant workspace changes and remaining recovery allowance. Do not silently turn a read-only worker into a writer.
+- A process still running after a wait timeout: wait on the same execution; this is not a new attempt.
+- Missing dependencies, invalid paths, permissions or network failures: diagnose the environment first. Switching models is not a repair for unchanged environmental conditions.
+- Changed requirements, shared interfaces or a semantic conflict: root decides the scope/plan first. An unavailable writer, a repeated defect after its one targeted retry, or a clear capability limit can use the next permitted route or root takeover within the existing budget.
+
+Each post-delivery follow-up keeps the slice ID, increments the attempt, consumes one task recovery and records only its incremental usage. Preserve the limits in `routing-guide.md`: three executions per slice, two recoveries per task, one targeted retry per route. No failure means no follow-up. DeepSeek's runner is one-shot: a later attempt uses a fresh HEAD-only worktree and must satisfy the original dirty-path and scope checks; do not imply session continuation.
 
 ## Wait Without Repeated Model Decisions
 
-DSH/Kimi runners are synchronous: each waits for the CLI, captures artifacts, checks scope and writes a receipt. Launch once. A tool returning a running session is not a failed worker or a reason to inspect logs.
+The DSH runner is synchronous: it waits for the CLI, captures artifacts, checks scope and writes a result and receipt. Launch once. A tool returning a running session is not a failed worker or a reason to inspect logs.
 
 1. Prefer completion/event notification supported by the active runtime. For native workers use its wait API; for a running shell use the same session's wait/read API.
 2. Do independent manager work before waiting. When needed, use a bounded wait within current tool/instruction limits (at most 60 seconds per blocking wait on this host). Timeout keeps the same attempt; do not interleave clock calls, short sleeps, log tails and reasoning about unchanged progress.

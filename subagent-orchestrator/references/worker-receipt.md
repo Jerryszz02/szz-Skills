@@ -5,7 +5,7 @@ Every dispatched worker must produce one receipt using this schema. External run
 ```json
 {
   "schema_version": 1,
-  "worker": "kimi",
+  "worker": "deepseek-harness",
   "task": {
     "objective": "Implement the bounded task.",
     "task_packet_sha256": "..."
@@ -25,7 +25,7 @@ Every dispatched worker must produce one receipt using this schema. External run
     "cache_write_input_tokens": 0,
     "output_tokens": 10,
     "total_tokens": 110,
-    "source": "kimi-session-wire"
+    "source": "dsh-session-tokenUsage.totals"
   },
   "evidence": {
     "session_id": "session_..."
@@ -41,13 +41,13 @@ Every dispatched worker must produce one receipt using this schema. External run
 - `reasoning_effort` is the actual or explicitly dispatched reasoning tier. External provider values such as `on` are preserved rather than translated to a native tier.
 - `fork_turns` is `none` or a numeric range for native workers. It is `not-applicable` for external workers because they receive a task packet in a `HEAD` worktree rather than a fork of the parent conversation.
 - When an external CLI does not expose a configurable reasoning tier, record `reasoning_effort` as `not-exposed` rather than leaving the field ambiguous.
-- `status` is one of `completed`, `failed`, `scope-rejected`, `cleanup-failed`, or `metadata-incomplete`.
+- `status` is one of `completed`, `failed`, `scope-rejected`, `cleanup-failed`, `metadata-incomplete`, or `result-incomplete` (missing or non-completed task-result evidence).
 - Token fields must come from runtime usage evidence. Never estimate missing usage or infer it from text length. Set `usage.available` to `false` and explain the source limitation when the runtime exposes no usage.
 - `input_tokens` includes uncached input, cache reads, and cache writes. `total_tokens` is `input_tokens + output_tokens`.
 
 ## Acceptance
 
-The main agent reviews the receipt together with the actual diff and test output. Native correctness can be accepted when runtime usage/model metadata is unavailable, but accounting remains incomplete; record this limitation explicitly. A receipt is audit evidence, not proof that the implementation is correct. A successful Kimi run is not acceptable when its actual model, reasoning tier, or usage cannot be recovered; the runner marks it `metadata-incomplete`.
+The main agent reviews the receipt together with the [worker result](worker-result.md), actual diff and test evidence. The result reports work and checks; this receipt accounts for execution and usage. Neither replaces independent acceptance. Native correctness can be accepted when runtime usage/model metadata is unavailable, but accounting remains incomplete; record this limitation explicitly. A successful DeepSeek run is not acceptable when its required runtime metadata cannot be recovered; the runner marks it `metadata-incomplete`.
 
 ## Task-Level Accounting
 

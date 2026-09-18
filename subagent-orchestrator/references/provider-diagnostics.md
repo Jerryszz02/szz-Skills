@@ -4,24 +4,23 @@ Use for an eligible writing route or an explicit provider health check. Read-onl
 
 ## Discover and Verify
 
-Run each probe independently so a missing unrelated command cannot short-circuit it:
+Probe the supported external entrypoint without requiring unrelated commands:
 
 ```bash
 python3 scripts/route_diagnostics.py probe --provider dsh
-python3 scripts/route_diagnostics.py probe --provider kimi
 ```
 
-Paths in these examples are relative to the skill directory. The resolver honors `DSH_BIN` / `KIMI_BIN`, then PATH, then the standard user installs `~/.local/bin/dsh` / `~/.kimi-code/bin/kimi`. An invalid explicit override fails without falling back. It reports the candidates and selected executable without dumping environment variables or configuration. A successful probe proves executable discovery only, not credentials, API connectivity or patch correctness.
+Paths in these examples are relative to the skill directory. The resolver honors `DSH_BIN`, then PATH, then `~/.local/bin/dsh`. An invalid explicit override fails without falling back. It reports the candidates and selected executable without dumping environment variables or configuration. A successful probe proves executable discovery only, not credentials, API connectivity or patch correctness.
 
-The normal runners use this resolver automatically. For a user-requested connectivity check, run each runner against a committed synthetic fixture in a temporary Git repository. Ask it to change one allowed text file, verify the exact content, then inspect the exported patch and receipt. Keep real project content and private sessions out of the probe. Do not run extra paid smoke tests on every delegation: a normal successful bounded worker run is already end-to-end evidence.
+The runner uses this resolver automatically. For a user-requested connectivity check, run it against a committed synthetic fixture in a temporary Git repository. Ask it to change one allowed text file, verify the exact content, then inspect the exported patch, result and receipt. Keep real project content and private sessions out of the probe. Do not run extra paid smoke tests on every delegation: a normal successful bounded worker run is already end-to-end evidence.
 
-Keep entrypoint and actual model separate: Kimi CLI can use a configured model from another provider. Preserve `actual_model`, the evidence source, and configured reasoning settings; do not silently switch models during diagnostics.
+Keep the entrypoint and observed model separate. Preserve `actual_model`, the evidence source, and configured reasoning settings; do not silently switch models during diagnostics.
 
 ## Record Every Route Outcome
 
 Runners already wait and collect receipts. Follow `execution-flow.md`: launch once, use completion waits, and read the final compact result. Do not re-probe healthy providers, tail live reasoning or regenerate unchanged summaries for progress.
 
-Pass stable `--slice-id ID --attempt N` to either runner. Without a slice ID, the runner uses the task-packet digest prefix; supply an explicit ID across corrected packets so recovery history stays stable.
+Pass stable `--slice-id ID --attempt N` to the runner. Without a slice ID, it uses the task-packet digest prefix; supply an explicit ID across corrected packets so recovery history stays stable.
 
 Once a valid repository and safe, empty output directory exist, the runner creates `route.json`. Invalid arguments, unsafe/nonempty output paths or invalid repositories fail on stderr before creating diagnostics. The report records:
 
@@ -29,7 +28,7 @@ Once a valid repository and safe, empty output directory exist, the runner creat
 - Stage, `reason_code`, exit code and `execution_state`.
 - Actual model, token usage/source and receipt path when recovered.
 
-Typical reasons: `cli_missing`, `headless_preflight_failed`, `model_config_unavailable`, `task_packet_invalid`, `dirty_overlap`, `worker_failed`, `scope_rejected`, `metadata_incomplete`, `completed`.
+Typical reasons: `cli_missing`, `headless_preflight_failed`, `model_config_unavailable`, `task_packet_invalid`, `dirty_overlap`, `worker_failed`, `scope_rejected`, `metadata_incomplete`, `result_incomplete`, `completed`.
 
 `not_started` is preflight only and consumes no model attempt. `unknown` is persisted immediately before CLI launch; model execution/usage is unproven, so count it conservatively as an attempted execution. `observed` means runtime usage was recovered, including failed model runs. A hard process kill may leave `worker_running` unfinished; reconcile it with runtime/process evidence instead of dropping the attempt.
 

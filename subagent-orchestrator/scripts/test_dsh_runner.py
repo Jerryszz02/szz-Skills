@@ -113,7 +113,32 @@ if [[ "${FAKE_DSH_NO_SESSION:-0}" != "1" ]]; then
   printf '{"run_id":"%s","model":"deepseek-v4-flash","reasoningEffort":"on","record":{"rows":{"tokenUsage":{"val":{"totals":{"uncachedInputTokens":120,"outputTokens":15,"cacheReadTokens":30,"cacheWriteTokens":5}}}}}}\n' "$run_id" > "${FAKE_DSH_SESSION_ROOT}/session-${run_id}.json"
 fi
 printf '%s\n' 'reasoning' >&2
-printf '%s\n' 'completed'
+cwd="$PWD"
+case "${FAKE_DSH_REPORT:-valid}" in
+  missing)
+    printf '%s\n' 'No structured result block.'
+    ;;
+  malformed)
+    printf '%s\n' '```json'
+    printf '%s\n' '{not valid json'
+    printf '%s\n' '```'
+    ;;
+  partial)
+    printf '%s\n' '```json'
+    printf '{"schema_version": 1, "status": "partial", "summary": "partial work", "checks": [{"command": "test -f generated.txt", "cwd": "%s", "exit_code": 1, "result": "missing"}], "unresolved": ["fixture review"], "evidence": ["generated.txt"], "changed_paths": ["generated.txt"]}\n' "$cwd"
+    printf '%s\n' '```'
+    ;;
+  false-completed)
+    printf '%s\n' '```json'
+    printf '{"schema_version": 1, "status": "completed", "summary": "claims done", "checks": [{"command": "false", "cwd": "%s", "exit_code": 1, "result": "failed"}], "unresolved": [], "evidence": [], "changed_paths": ["generated.txt"]}\n' "$cwd"
+    printf '%s\n' '```'
+    ;;
+  *)
+    printf '%s\n' '```json'
+    printf '{"schema_version": 1, "status": "completed", "summary": "fixture implemented", "checks": [{"command": "test -f generated.txt", "cwd": "%s", "exit_code": 0, "result": "present"}], "unresolved": [], "evidence": ["generated.txt"], "changed_paths": ["generated.txt"]}\n' "$cwd"
+    printf '%s\n' '```'
+    ;;
+esac
 exit "${FAKE_DSH_EXIT:-0}"
 """,
             encoding="utf-8",
@@ -153,6 +178,7 @@ exit "${FAKE_DSH_EXIT:-0}"
             "changes.patch",
             "exit-code",
             "scope-check.txt",
+            "worker-result.json",
             "worker-receipt.json",
             "manifest.json",
         ):
@@ -161,6 +187,7 @@ exit "${FAKE_DSH_EXIT:-0}"
         self.assertFalse((self.repo / "generated.txt").exists())
         manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
         receipt = json.loads((output / "worker-receipt.json").read_text(encoding="utf-8"))
+        worker_result = json.loads((output / "worker-result.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["worker"], "deepseek-harness")
         self.assertEqual(manifest["profile"], "headless")
         self.assertEqual(manifest["actual_model"], "deepseek-v4-flash")
@@ -168,10 +195,58 @@ exit "${FAKE_DSH_EXIT:-0}"
         self.assertEqual(manifest["usage"]["output_tokens"], 15)
         self.assertEqual(manifest["usage"]["total_tokens"], 170)
         self.assertTrue(manifest["metadata_complete"])
+        self.assertTrue(manifest["result_complete"])
+        self.assertEqual(manifest["result_status"], "completed")
+        self.assertEqual(manifest["result_path"], "worker-result.json")
         self.assertEqual(receipt["reasoning_effort"], "on")
         self.assertEqual(receipt["fork_turns"], "not-applicable")
         self.assertTrue(manifest["scope_ok"])
         self.assertTrue(manifest["worktree_cleaned"])
+        self.assertEqual(worker_result["status"], "completed")
+        self.assertEqual(worker_result["changed_paths"]["source"], "git-observed")
+        self.assertEqual(worker_result["changed_paths"]["paths"], ["generated.txt"])
+        self.assertEqual(worker_result["reported_changed_paths"]["source"], "worker-reported")
+        self.assertTrue((output / "worker-result.raw.txt").is_file())
+
+    def test_missing_report_is_result_incomplete(self) -> None:
+        output = self.root / "missing-result"
+        result = self.invoke(output, FAKE_DSH_REPORT="missing")
+        self.assertEqual(result.returncode, 76, result.stderr)
+        manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+        worker_result = json.loads((output / "worker-result.json").read_text(encoding="utf-8"))
+        receipt = json.loads((output / "worker-receipt.json").read_text(encoding="utf-8"))
+        self.assertFalse(manifest["result_complete"])
+        self.assertEqual(manifest["result_status"], "unverified")
+        self.assertEqual(receipt["status"], "result-incomplete")
+        self.assertEqual(worker_result["status"], "unverified")
+        self.assertTrue(worker_result["issues"])
+        self.assertTrue((output / "worker-result.raw.txt").is_file())
+
+    def test_false_completed_claim_is_result_incomplete(self) -> None:
+        output = self.root / "false-result"
+        result = self.invoke(output, FAKE_DSH_REPORT="false-completed")
+        self.assertEqual(result.returncode, 76, result.stderr)
+        worker_result = json.loads((output / "worker-result.json").read_text(encoding="utf-8"))
+        self.assertEqual(worker_result["status"], "unverified")
+        self.assertTrue(any("exit_code" in issue for issue in worker_result["issues"]))
+
+    def test_partial_report_is_result_incomplete(self) -> None:
+        output = self.root / "partial-result"
+        result = self.invoke(output, FAKE_DSH_REPORT="partial")
+        self.assertEqual(result.returncode, 76, result.stderr)
+        manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+        worker_result = json.loads((output / "worker-result.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["result_status"], "partial")
+        self.assertFalse(manifest["result_complete"])
+        self.assertEqual(worker_result["status"], "partial")
+
+    def test_malformed_report_is_result_incomplete(self) -> None:
+        output = self.root / "malformed-result"
+        result = self.invoke(output, FAKE_DSH_REPORT="malformed")
+        self.assertEqual(result.returncode, 76, result.stderr)
+        worker_result = json.loads((output / "worker-result.json").read_text(encoding="utf-8"))
+        self.assertEqual(worker_result["status"], "unverified")
+        self.assertEqual(worker_result["report"]["parse"], "malformed")
 
     def test_worker_exit_code_is_preserved(self) -> None:
         output = self.root / "blocked-artifacts"

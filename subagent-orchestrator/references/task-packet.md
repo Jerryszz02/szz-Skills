@@ -49,7 +49,7 @@ Include implementation, related tests and in-scope self-correction in one writer
 
 ## Native Worker Additions
 
-For Spark, first apply `spark-worker.md`; keep DeepSeek/Kimi ahead of it on source-writing routes. Also state:
+For Spark, first apply `spark-worker.md`; keep DeepSeek ahead of it on source-writing routes. Also state:
 
 - Role, required model, and required reasoning level supported by the active tool.
 - For a Spark writer: manager-approved plan, exact inputs/outputs and edge cases, owned files, non-goals, and exact verification commands with cwd and expected result. Missing business rules or an unconfirmed cause return to the manager; do not design them independently.
@@ -59,7 +59,7 @@ For Spark, first apply `spark-worker.md`; keep DeepSeek/Kimi ahead of it on sour
 - For integration: starting HEAD/dirty-path inventory, exact root-approved patch paths and digests, writer dependencies, required commands, and log destinations. Verification-only packets prohibit source repairs.
 - Do not create an integration packet solely for fixed patch/check commands: root invokes deterministic tools. Additional independently useful integration must pass the work-mode gate.
 - State `HEAD-only dependency: no` when inspecting current uncommitted changes. Native packets are not passed through the external HEAD-only validator.
-- Expected response sections: status, changed paths, result, exact checks/exit codes, blockers, artifact pointers; target at most 250 words of final prose and save bulk logs to artifacts.
+- Writers return the JSON report in `worker-result.md`; preserve raw responses and bulk logs in artifacts. Read-only workers keep the compact evidence response in `read-only-worker.md`.
 - Attempt number and remaining recovery allowance; workers report failures instead of spawning retries or silently expanding repairs.
 - The unified receipt fields required by `worker-receipt.md`.
 - That the worker is not alone in the repository and must not revert unrelated changes.
@@ -72,7 +72,7 @@ For Spark, first apply `spark-worker.md`; keep DeepSeek/Kimi ahead of it on sour
 - Anything outside allowed paths is denied even if it is not listed under forbidden paths. Forbidden paths take precedence.
 - Do not include secrets, tokens, cookies, private keys, `.env` values, or private account context.
 
-The DeepSeek and Kimi runners validate the required headings and path scope, refuse dispatch when an allowed path already has uncommitted changes in the main workspace, and record all changed paths for main-agent review.
+The DeepSeek runner validates the required headings and path scope, refuses dispatch when an allowed path already has uncommitted changes in the main workspace, and records all changed paths for main-agent review.
 
 ## Compact Handoffs
 
@@ -87,11 +87,6 @@ subagent-orchestrator/scripts/run-dsh-worker.sh \
   --cwd /absolute/project/path \
   --task-file /absolute/task-packet.md \
   --output-dir /absolute/artifact-directory
-
-subagent-orchestrator/scripts/run-kimi-worker.sh \
-  --cwd /absolute/project/path \
-  --task-file /absolute/task-packet.md \
-  --output-dir /absolute/artifact-directory
 ```
 
-External workers keep their configured provider reasoning settings; do not assign native `medium` to DeepSeek/Kimi. Kimi uses its configured default model unless the user or current configuration requires `--model <alias>`. Runner failures do not authorize bypassing scope or recovery limits. Read the external boundaries in `routing-guide.md` before dispatch.
+DeepSeek keeps its configured provider reasoning settings; do not assign native `medium` to it. Runner failures do not authorize bypassing scope or recovery limits. Read the external boundaries in `routing-guide.md` before dispatch.

@@ -9,7 +9,6 @@ From the repository root:
 ```bash
 python3 -m unittest discover -s subagent-orchestrator/scripts -p 'test_*.py' -v
 bash -n subagent-orchestrator/scripts/run-dsh-worker.sh
-bash -n subagent-orchestrator/scripts/run-kimi-worker.sh
 python3 /absolute/path/to/skill-creator/scripts/quick_validate.py /absolute/path/to/subagent-orchestrator
 git diff --check
 ```
@@ -26,14 +25,17 @@ For a meaningful change to routing, use an isolated fixture and an independent p
 | Bounded text/code evidence; Spark and Luna callable | Spark medium, compact packet, no external probing. |
 | Read-only work; Spark and Luna unavailable but Terra/DeepSeek callable | Manager takeover with reason; no Terra/provider fallback. |
 | Bounded source-writing implementation; all routes permitted and callable | DeepSeek first, with only required context. |
-| Source-writing work; DeepSeek unavailable before execution, Kimi callable | Kimi; preflight skip consumes no model execution. |
+| Source-writing work; DeepSeek unavailable before execution, eligible native writer callable | Use the eligible native writing route; preflight skip consumes no model execution. |
 | Source-writing work; external data transfer disallowed | Permitted native writing route; no workaround via another provider. |
 | Approved patches plus unrelated uncommitted edits | Root-reviewed deterministic integration in target workspace; preserve unrelated edits and check combined state. No worker solely for fixed commands. |
-| Spark appears in the main-task picker but not the active spawn tool | Skip it before execution; preserve DeepSeek/Kimi priority for writing and use role fallback. |
+| Spark appears in the main-task picker but not the active spawn tool | Skip it before execution; preserve DeepSeek priority for writing and use role fallback. |
 | Two failures already consumed the whole task's recovery allowance | No further worker recovery, even if another provider remains available. |
 | Worker says tests passed but lacks command/cwd/results | Request evidence; do not accept the summary as verification. |
 | Native tool requires independent work; only a serial dependency remains | State restriction; do not manufacture parallel work or bypass the same restriction. |
 | Verification command writes generated project files | Not read-only; use an allowed scratch copy, existing writer or manager. |
+| Writer self-check and final acceptance both pass | Finish; no mandatory correction or second worker review. |
+| Delivered native writer has one reproducible in-scope omission and recovery remains | Continue that writer with focused failure evidence; same slice, next attempt, incremental usage. |
+| Missing or contradictory structured result despite CLI exit zero | Preserve raw artifacts and mark result unverified/incomplete; do not infer passing checks. |
 
 This exercises instructions, not the real execution harness. It uses evaluator tokens, so record it as an evaluation attempt. A forward-test failure supports a focused correction; do not repeat evaluation indefinitely.
 

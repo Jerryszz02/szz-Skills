@@ -20,12 +20,14 @@ SKIP_REASONS = (
 )
 
 
-def resolve_cli(provider: str) -> dict:
-    override = os.environ.get("DSH_BIN" if provider == "dsh" else "KIMI_BIN")
+def resolve_cli(provider: str = "dsh") -> dict:
+    if provider != "dsh":
+        raise ValueError(f"unsupported provider: {provider}")
+    override = os.environ.get("DSH_BIN")
     home = Path.home()
     candidates = [(override, "override")] if override else [
-        (provider, "PATH"),
-        (str(home / (".local/bin/dsh" if provider == "dsh" else ".kimi-code/bin/kimi")), "user_install"),
+        ("dsh", "PATH"),
+        (str(home / ".local/bin/dsh"), "user_install"),
     ]
     checked = []
     for candidate, source in candidates:
@@ -48,7 +50,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     probe = sub.add_parser("probe", help="Resolve CLI only; no API request")
-    probe.add_argument("--provider", choices=("dsh", "kimi"), required=True)
+    probe.add_argument("--provider", choices=("dsh",), required=True)
     probe.add_argument("--output", type=Path)
     probe.add_argument("--task-file", type=Path)
     probe.add_argument("--slice-id")

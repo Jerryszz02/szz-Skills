@@ -20,7 +20,7 @@ Use a fresh evaluator with the skill and each request/state, but **withhold this
 | D10 | User supplies a short function and asks what it returns. | Direct explanation without repository exploration. |
 | D11 | Same source-writing task as D5; external transfer is disallowed. | Permitted native writer, medium; no second-provider workaround. |
 | D12 | No task-scoped usage; worker result is supported by evidence. | Native correctness can pass, usage stays unknown; no savings percentage. |
-| D13 | Same bounded writing task as D5; DeepSeek and Kimi unavailable, Spark supported. | Spark medium, explicit plan/write ownership/verification; no bypass of provider priority. |
+| D13 | Same bounded writing task as D5; DeepSeek unavailable, Spark supported. | Spark medium, explicit plan/write ownership/verification; no bypass of provider priority. |
 | D14 | D13 but Spark appears only in the main-task picker, absent from spawn tool. | Skip Spark before execution, use Luna medium; no new task/CLI/config workaround. |
 | D15 | “Improve this screenshot”; no text specification. | Manager interprets image and defines changes first; Spark receives text only, visual acceptance remains separate. |
 | D16 | Only native writing available; diagnose an unknown system-wide failure and choose architecture. | Manager owns diagnosis/decisions; bounded evidence may be delegated, no open-ended Spark writer. |
@@ -34,12 +34,16 @@ Use a fresh evaluator with the skill and each request/state, but **withhold this
 | D23 | User explicitly forbids delegation despite a large independent task. | Direct execution honors user instruction; no worker/provider launch. |
 | D24 | Existing higher-priority global instructions mandate delegation. | Honor that constraint, minimize handoffs; do not silently rewrite global instructions. |
 | D25 | User asks to change one line and supplied evidence fully identifies it; no model counters available. | Direct; do not load provider/evaluation manuals, spawn accounting agents or fabricate savings. |
+| D26 | A native writer delivered and self-checked; root found a reproducible edge case within the original write scope. The original writer is available and recovery remains. | Continue that writer with the failed criterion and evidence; same slice, next attempt, no full packet replay or implicit permission change. |
+| D27 | The writer self-checked and root's final acceptance passed. | End the slice; no routine post-delivery correction or second verifier. |
+| D28 | A native writer is waiting on a still-running test process. | Wait on that execution; do not spawn a replacement or count a wait timeout as a new attempt. |
+| D29 | A source-writing worker exits zero, but its result lacks check exit codes or claims completed with a failing check. | Mark result unverified/incomplete and inspect focused evidence; never accept CLI success as verification. |
 
 Record whether the skill was available/read, direct/deterministic/delegate selection and its handoff/acceptance reason, whether an actual dispatch ID exists, and whether the task was accepted. Keep these states separate. In a live run, audit the complete manager trace for bulk pre-dispatch exploration, progress-only requests, unnecessary handoffs and duplicated worker work, not just its final explanation.
 
 ## 2. Reproducible Live Tasks
 
-Use this repository at one fixed, recorded commit. Make fresh **isolated copies** for each task/variant; never inject faults into the working repository. Use a clean evaluation fixture containing the tracked `subagent-orchestrator/scripts/` files, `subagent-orchestrator/references/kimi-worker-agent.md`, and a `README.md` with the single line `# Usage Fixture`. Preserve the `subagent-orchestrator/scripts/` and `subagent-orchestrator/references/` sibling layout: the copied Kimi runner resolves its agent file relative to its own directory. Include the reference in every variant, even when DeepSeek is expected to be available, so Kimi fallback remains runnable. Initialize and commit the fixture before trials so external HEAD-only routes can operate. Do not copy inherited solutions, secrets, installed skills, or historical run artifacts.
+Use this repository at one fixed, recorded commit. Make fresh **isolated copies** for each task/variant; never inject faults into the working repository. Use a clean evaluation fixture containing the tracked `subagent-orchestrator/scripts/` files and a `README.md` with the single line `# Usage Fixture`. Preserve the scripts directory layout so the runner can locate its helpers. Initialize and commit the fixture before trials so external HEAD-only routes can operate. Do not copy inherited solutions, secrets, installed skills, or historical run artifacts.
 
 For E3/E4, prepare the fault **before committing the fixture**. Replace the following exact line in the fixture's `summarize_usage.py` (assert exactly one match):
 

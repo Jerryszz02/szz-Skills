@@ -128,8 +128,32 @@ Follow the task packet exactly. Do not call spawn_agent, create child workers,
 or delegate any part of the task. Modify only Allowed paths and do not expand
 scope. Do not create commits, branches, worktrees, or change Git configuration.
 Do not read, request, print, or store secrets. Run the required verification and
-inspect your diff. Finish with status, files changed, implementation summary,
-verification results, and blockers.
+inspect your diff.
+
+After implementation and your relevant self-check or correction, your entire
+final response must be one JSON object or one fenced JSON block, with no
+surrounding prose. Use schema_version 1:
+
+```json
+{
+  "schema_version": 1,
+  "status": "completed",
+  "summary": "concise outcome",
+  "checks": [
+    {"command": "exact command", "cwd": "/absolute/worktree", "exit_code": 0, "result": "concise observed result"}
+  ],
+  "unresolved": [],
+  "evidence": ["file, command, or artifact reference"]
+}
+```
+
+Use status completed only when at least one check actually ran, every check
+exit_code is 0, and unresolved is empty; otherwise use partial or blocked.
+Checks describe final required verification of the delivered state; keep
+pre-fix reproductions and superseded failures in evidence references.
+Report only commands you ran, with their real exit codes and observed results.
+Never invent evidence, never claim a check passed from a CLI exit alone, and do
+not add task-packet sections. The root agent independently verifies.
 PROMPT
 )"$'\n'"Worker receipt run id: ${run_id}"$'\n\n'"$(<"$task_file")"
 
@@ -153,6 +177,18 @@ git -C "$worktree" status --short > "$output_dir/status.txt"
 git -C "$worktree" diff --name-only --no-ext-diff "$head_commit" -- | awk 'NF' | sort -u > "$output_dir/changed-paths.txt"
 git -C "$worktree" diff --binary --no-ext-diff "$head_commit" -- > "$output_dir/changes.patch"
 printf '%s\n' "$dsh_exit_code" > "$output_dir/exit-code"
+
+# Normalize the worker's final report; observed paths come only from Git.
+route_reason="result_collection_failed"
+result_complete=true
+if ! python3 "$script_dir/worker_result.py" \
+  --report "$output_dir/final.txt" \
+  --changed-paths "$output_dir/changed-paths.txt" \
+  --output "$output_dir/worker-result.json" \
+  >"$output_dir/worker-result.stdout" 2>"$output_dir/worker-result.stderr"; then
+  result_complete=false
+fi
+result_status="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("status", "unverified"))' "$output_dir/worker-result.json" 2>/dev/null || printf '%s' "unverified")"
 
 scope_ok=true
 if python3 "$script_dir/task_packet.py" check-paths \
@@ -214,14 +250,27 @@ if ! python3 "$script_dir/worker_receipt.py" dsh \
   fi
 fi
 
-python3 - "$output_dir/manifest.json" "$output_dir/worker-receipt.json" "$repo_root" "$head_commit" \
-  "$dsh_exit_code" "$runner_exit_code" "$scope_ok" "$worktree_cleaned" "$worktree" "$metadata_complete" <<'PY'
+if [[ "$result_complete" != true && "$runner_exit_code" -eq 0 ]]; then
+  runner_exit_code=76
+  worker_status="result-incomplete"
+  python3 "$script_dir/worker_receipt.py" dsh \
+    --task-file "$task_file" \
+    --session-root "$dsh_session_root" \
+    --run-id "$run_id" \
+    --configured-model "$configured_model" \
+    --status "$worker_status" \
+    --output "$output_dir/worker-receipt.json"
+fi
+
+python3 - "$output_dir/manifest.json" "$output_dir/worker-receipt.json" "$output_dir/worker-result.json" "$repo_root" "$head_commit" \
+  "$dsh_exit_code" "$runner_exit_code" "$scope_ok" "$worktree_cleaned" "$worktree" "$metadata_complete" "$result_complete" <<'PY'
 import json
 import sys
 
 (
     manifest_path,
     receipt_path,
+    result_path,
     repo_root,
     head_commit,
     dsh_exit_code,
@@ -230,10 +279,16 @@ import sys
     worktree_cleaned,
     worktree_path,
     metadata_complete,
+    result_complete,
 ) = sys.argv[1:]
 
 with open(receipt_path, encoding="utf-8") as handle:
     receipt = json.load(handle)
+try:
+    with open(result_path, encoding="utf-8") as handle:
+        worker_result = json.load(handle)
+except (OSError, json.JSONDecodeError):
+    worker_result = {}
 
 manifest = {
     "worker": "deepseek-harness",
@@ -246,6 +301,9 @@ manifest = {
     "reasoning_effort": receipt["reasoning_effort"],
     "usage": receipt["usage"],
     "metadata_complete": metadata_complete == "true",
+    "result_path": "worker-result.json",
+    "result_status": worker_result.get("status"),
+    "result_complete": result_complete == "true",
     "dsh_exit_code": int(dsh_exit_code),
     "runner_exit_code": int(runner_exit_code),
     "scope_ok": scope_ok == "true",
@@ -259,6 +317,10 @@ manifest = {
         "changes.patch",
         "exit-code",
         "scope-check.txt",
+        "worker-result.json",
+        "worker-result.raw.txt",
+        "worker-result.stdout",
+        "worker-result.stderr",
         "worker-receipt.json",
         "route.json",
     ],
@@ -277,6 +339,10 @@ if [[ "$runner_exit_code" -ne 0 ]]; then
   if [[ "$scope_ok" != true ]]; then route_reason="scope_rejected"
   elif [[ "$worktree_cleaned" != true ]]; then route_reason="cleanup_failed"
   elif [[ "$dsh_exit_code" -ne 0 ]]; then route_reason="worker_failed"
-  elif [[ "$metadata_complete" != true ]]; then route_reason="metadata_incomplete"; fi
+  elif [[ "$metadata_complete" != true ]]; then route_reason="metadata_incomplete"
+  elif [[ "$result_complete" != true ]]; then route_reason="result_incomplete"; fi
 fi
+
+echo "Worker result: $output_dir/worker-result.json status=$result_status complete=$result_complete"
+echo "Runner exit: $runner_exit_code reason=$route_reason"
 exit "$runner_exit_code"
