@@ -2,11 +2,11 @@
 
 ## 适用范围
 
-覆盖 DeepSeek Harness、Kimi Code、原生 Spark/Luna/Terra worker 的任务委派、文件修改、凭据和验收边界。
+覆盖 DeepSeek Harness、原生 Spark/Luna/Terra worker 的任务委派、文件修改、凭据和验收边界。
 
 ## 安全边界
 
-- DeepSeek 与 Kimi 的 detached worktree 只隔离 Git 修改冲突，不是操作系统安全沙箱。
+- DeepSeek 的 detached worktree 只隔离 Git 修改冲突，不是操作系统安全沙箱。
 - 不向 worker 发送 secrets、token、Cookie、私钥、`.env` 值、私密登录态或账户访问任务。
 - 认证、支付、安全结论、迁移、破坏性 Git、架构决定、集成和最终验收由主 Agent 负责。
 - 外部 worker 只能修改 task packet 的允许路径；允许路径上的主工作区未提交改动会阻止启动。
@@ -17,7 +17,7 @@
 
 ## 凭据处理
 
-- runner 不读取、打印或保存 DSH/Kimi 的凭据配置；它只调用用户已配置的 CLI profile。
+- runner 不读取、打印或保存 DSH 的凭据配置；它只调用用户已配置的 CLI profile。
 - DSH runner 仅将 `--dump-config` 通过管道提取有效 `model` 字段；不保存、打印或写入完整配置。
 - DSH 的 reasoning stream 保存于指定 artifact 目录，可能包含任务上下文；该目录必须位于仓库外并按敏感工作产物处理。
 - receipt 只从 session 数据抽取模型、推理档位、token 和 session 路径，不复制 prompt、完整 wire 内容或凭据。

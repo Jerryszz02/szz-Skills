@@ -213,9 +213,11 @@ python3 -m unittest test_score_candidates.py
 
 `subagent-orchestrator` 先判断工作能否独立交付、需要多少交接材料，以及主模型能否用少量证据验收，再选择直接执行、确定性工具或委派。小改动、已知强耦合工作和固定命令可直接完成；范围扩大时重新判断。主模型保留需求、方案、关键决策和最终验收，不再以固定搜索次数触发委派。
 
-通过委派门槛后，模型顺序保持不变：定向只读 **Spark medium → Luna low → 主模型**，广泛只读分析 **Luna low → 主模型**；写入 **DeepSeek → Kimi → Spark → Luna → Terra**，原生写入 medium。Spark 必须符合[任务边界](subagent-orchestrator/references/spark-worker.md)且当前工具可调用；不支持就跳过，不使用替代配置绕过。禁止 Sol 和嵌套委派；原生 spawn 前检查实时并发位，显式模型/档位、`fork_turns: "none"`。
+通过委派门槛后，定向只读 **Spark medium → Luna low → 主模型**，广泛只读分析 **Luna low → 主模型**；写入 **DeepSeek → Spark → Luna → Terra**，原生写入 medium。Spark 必须符合[任务边界](subagent-orchestrator/references/spark-worker.md)且当前工具可调用；不支持就跳过，不使用替代配置绕过。禁止 Sol 和嵌套委派；原生 spawn 前检查实时并发位，显式模型/档位、`fork_turns: "none"`。
 
 默认一个执行器负责同一切片的实现、相关测试及首次交付前的范围内修正；主模型复用证据并检查实际 diff 和集成结果。同步 runner 负责等待与收据，不反复读取进行中日志；普通文本补丁经主模型审查后用确定性工具应用，固定命令不单独派整合代理。详见[执行与整合](subagent-orchestrator/references/execution-flow.md)。
+
+写入任务通过 [worker-result.json](subagent-orchestrator/references/worker-result.md) 交付完成情况、检查结果、未完成条件与证据位置；模型和用量仍记在 receipt。证据缺失不能从 CLI 退出码推断成功。自检和主验收通过即结束；只在交付后发现具体范围内缺陷时，优先续接原生 writer，保留原 slice 并计入恢复预算。DeepSeek 仍为一次性 HEAD-only 执行。
 
 最多每切片 3 次执行、整项任务共享 2 次恢复、同路线 1 次定向重试，首次交付后的修正计入恢复。执行失败和未知用量保留；runtime 并行与权限约束不因技能而放宽。
 
@@ -234,22 +236,13 @@ subagent-orchestrator/scripts/run-dsh-worker.sh \
   --output-dir /tmp/deepseek-worker-artifacts
 ```
 
-Kimi fallback：
-
-```bash
-subagent-orchestrator/scripts/run-kimi-worker.sh \
-  --cwd /Users/jerryszz/Desktop/Projects/example \
-  --task-file /tmp/worker-task.md \
-  --output-dir /tmp/kimi-worker-artifacts
-```
-
 ### 边界
 
 - 委派必须有界、可验证；存在依赖时仅在运行环境允许的情况下串行委派。架构、安全判断、语义冲突和最终验收留在主 Agent；外部 worker 继续排除认证、支付、迁移和破坏性操作。
-- DeepSeek 与 Kimi worktree 只是 Git 冲突隔离，不是操作系统安全沙箱，不得传递 secrets、Cookie、私钥、`.env` 值或私密会话。
+- DeepSeek worktree 只是 Git 冲突隔离，不是操作系统安全沙箱，不得传递 secrets、Cookie、私钥、`.env` 值或私密会话。
 - runner 不创建分支或 commit，也不自动应用 patch。主 Agent 必须检查 manifest、scope、实际 diff 和验证结果。
 - 如果允许路径存在主工作区未提交改动，外部 runner 会拒绝启动；无关脏文件不会阻止执行。
-- 每个 worker 都必须提供统一 `worker-receipt.json`/回执，记录任务、实际模型、推理档位、fork 范围、状态和 token。Kimi manifest 从本地 session runtime 读取真实模型与累计 usage；缺少这些证据时不会把请求模型冒充为实际模型。
+- 每个 worker 都必须提供统一 `worker-receipt.json`/回执，记录任务、实际模型、推理档位、fork 范围、状态和 token。实际模型与 usage 来自运行时证据；缺少证据时不把请求模型冒充为实际模型。
 
 ### 验证与用量
 

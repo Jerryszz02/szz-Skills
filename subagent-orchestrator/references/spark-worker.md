@@ -1,6 +1,6 @@
 # Spark Worker Eligibility
 
-Use Spark as a focused scout or executor of an existing plan. This is a task-routing preference, not a measured ranking or cost claim. DeepSeek remains the first source-writing choice; preserve **DeepSeek → Kimi → Spark → Luna → Terra** and skip ineligible or unavailable routes.
+Use Spark as a focused scout or executor of an existing plan. This is a task-routing preference, not a measured ranking or cost claim. DeepSeek remains the first source-writing choice; preserve **DeepSeek → Spark → Luna → Terra** and skip ineligible or unavailable routes.
 
 ## Runtime Gate
 

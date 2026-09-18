@@ -9,24 +9,22 @@ from unittest.mock import patch
 
 from route_diagnostics import resolve_cli
 import test_dsh_runner
-import test_kimi_runner
 
 
 class ResolutionTests(unittest.TestCase):
     def test_user_install_fallback_and_invalid_override(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            for provider, rel in [("dsh", ".local/bin/dsh"), ("kimi", ".kimi-code/bin/kimi")]:
-                binary = home / rel
-                binary.parent.mkdir(parents=True, exist_ok=True)
-                binary.write_text("#!/bin/sh\nexit 0\n")
-                binary.chmod(0o755)
-                with patch("route_diagnostics.Path.home", return_value=home), patch.dict(os.environ, {"PATH": ""}, clear=True):
-                    result = resolve_cli(provider)
-                    self.assertEqual(result["executable"], str(binary))
-                    self.assertEqual(result["resolution_source"], "user_install")
-                    with patch.dict(os.environ, {provider.upper() + "_BIN": str(home / "missing")}):
-                        self.assertIsNone(resolve_cli(provider)["executable"])
+            binary = home / ".local/bin/dsh"
+            binary.parent.mkdir(parents=True, exist_ok=True)
+            binary.write_text("#!/bin/sh\nexit 0\n")
+            binary.chmod(0o755)
+            with patch("route_diagnostics.Path.home", return_value=home), patch.dict(os.environ, {"PATH": ""}, clear=True):
+                result = resolve_cli("dsh")
+                self.assertEqual(result["executable"], str(binary))
+                self.assertEqual(result["resolution_source"], "user_install")
+                with patch.dict(os.environ, {"DSH_BIN": str(home / "missing")}):
+                    self.assertIsNone(resolve_cli("dsh")["executable"])
 
     def test_path_wins_and_nonexecutable_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"PATH": tmp}, clear=True):
@@ -106,19 +104,12 @@ class DshDiagnosticsTests(unittest.TestCase):
         self.assertEqual(value["execution_state"], "unknown")
         self.assertIsNone(value["usage"]["total_tokens"])
 
-
-class KimiDiagnosticsTests(unittest.TestCase):
-    setUp = test_kimi_runner.KimiRunnerTests.setUp
-    tearDown = test_kimi_runner.KimiRunnerTests.tearDown
-    invoke = test_kimi_runner.KimiRunnerTests.invoke
-
-    def test_missing_binary_has_diagnostic(self):
-        output = self.root / "missing-cli"
-        result = self.invoke(output, KIMI_BIN=str(self.root / "missing"))
-        self.assertEqual(result.returncode, 69)
+    def test_incomplete_result_is_distinct_from_worker_failure(self):
+        output = self.root / "result-incomplete"
+        self.assertEqual(self.invoke(output, FAKE_DSH_REPORT="missing").returncode, 76)
         value = json.loads((output / "route.json").read_text())
-        self.assertEqual(value["reason_code"], "cli_missing")
-        self.assertEqual(value["execution_state"], "not_started")
+        self.assertEqual(value["reason_code"], "result_incomplete")
+        self.assertEqual(value["execution_state"], "observed")
 
 
 if __name__ == "__main__":
