@@ -10,7 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制研究景点或餐厅，生成审核清单，并在批准后保存到 Google Maps | “研究京都景点”“推荐成都餐厅”“把审核清单加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
-| `subagent-orchestrator` | 可用 | 按交接与验收成本选择委派，执行器实现自检，写入 DeepSeek 优先 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
+| `subagent-orchestrator` | 仅显式调用 | 按交接与验收成本选择委派，执行器实现自检，写入 DeepSeek 优先 | “使用 $subagent-orchestrator 实现并测试这个功能” |
 
 ## How This Repository Works
 
@@ -208,6 +208,8 @@ python3 -m unittest test_score_candidates.py
 ## subagent-orchestrator
 
 路径：`subagent-orchestrator/`
+
+仅在用户输入 `$subagent-orchestrator` 或明确要求使用这个 skill 时启用。普通调查、实现、验证或泛指使用子代理的请求不会自动触发；`agents/openai.yaml` 已设置 `allow_implicit_invocation: false`。
 
 ### 功能
 

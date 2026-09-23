@@ -3,4 +3,4 @@ interface:
   short_description: "按交接与验收成本选择委派，同一执行器实现自检，机械协调交给工具"
   default_prompt: "使用 $subagent-orchestrator 按隔离性和验收成本选择直接执行或委派，让同一执行器实现并自检，保留 DeepSeek 优先写入与主模型最终验收，用确定性工具减少协调往返。"
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

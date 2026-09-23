@@ -6,9 +6,11 @@ Copy the following into your global `~/.codex/AGENTS.md` (or the effective Codex
 ## Delegation
 
 - The main agent owns requirements, planning, key decisions, and final acceptance.
-- Use $subagent-orchestrator to choose direct work, deterministic tools or
-  bounded delegation. Delegate independent work when compact handoff and
-  acceptance avoid repeating it; honor runtime restrictions.
+- Use $subagent-orchestrator only when the user explicitly invokes it or asks
+  to use that skill. Do not activate it automatically for exploration,
+  diagnosis, implementation, or general requests to use subagents.
+- Once invoked, choose direct work, deterministic tools or bounded delegation;
+  honor runtime restrictions.
 - Keep known small or tightly coupled work direct when handoff/acceptance would
   reconstruct it. Reassess if scope grows. Let one worker implement and self-test;
   use deterministic tools for waiting, receipts and approved patch application.

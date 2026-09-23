@@ -1,9 +1,11 @@
 ---
 name: subagent-orchestrator
-description: Choose direct execution or bounded delegation for repository investigation, implementation, and verification. Use when coordinating workers or deciding whether substantial independent work benefits from delegation; routine edits and explanations can stay direct.
+description: Choose direct execution or bounded delegation only when the user explicitly invokes $subagent-orchestrator or asks to use this skill. Do not activate automatically for repository investigation, implementation, or verification.
 ---
 
 # Subagent Orchestrator
+
+Use this workflow only after the user explicitly invokes `$subagent-orchestrator` or asks to use this skill. General requests to investigate, implement, verify, or use subagents do not activate it automatically.
 
 The selected main model owns requirements, planning, key decisions and final acceptance. Only root delegates; prohibit nested delegation, Sol workers and full parent-history forks.
 
