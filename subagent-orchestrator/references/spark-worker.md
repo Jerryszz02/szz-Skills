@@ -1,6 +1,6 @@
 # Spark Worker Eligibility
 
-Use Spark as a focused scout or executor of an existing plan. This is a task-routing preference, not a measured ranking or cost claim. DeepSeek remains the first source-writing choice; preserve **DeepSeek → Spark → Luna → Terra** and skip ineligible or unavailable routes.
+Use Spark as a focused scout or executor of an existing plan. This is a task-routing preference, not a measured ranking or cost claim. DeepSeek remains the first source-writing choice; preserve **DeepSeek → Spark → Luna → Terra** and skip ineligible or unavailable routes. A Spark attempt still obeys the serial-execution rule: at most one active worker across native and external routes for one user task, and a fallback starts only after the previous execution has stopped.
 
 ## Runtime Gate
 
@@ -24,9 +24,9 @@ Unknown files are compatible with a bounded scout question. Unknown system behav
 
 ## Handoff and Acceptance
 
-Begin uncertain tasks with the compact read-only packet in `read-only-worker.md`. Writing requires a separate, explicit packet from `task-packet.md` after the manager decides the plan and ownership; do not silently promote a scout. For a changed role, reassess provider priority and permissions rather than keeping Spark merely because it has context.
+Use `read-only-worker.md` when code evidence is needed for the manager's plan. This optional stage runs serially; a clear writing plan can go directly to a writer without a scout. A Spark writer still needs the bounded plan in `task-packet.md`; skip Spark if resolving uncertainty requires decisions beyond that plan. An existing scout never gains implicit write permission. For a changed role, reassess provider priority and permissions rather than keeping Spark merely because it has context.
 
-Tell every executor to run the named verification commands, with cwd and expected results. Require actual command/cwd/exit code and concise failure evidence; “implemented” is not “verified.” Save long logs outside tracked source and return an evidence index. If a new assumption, out-of-scope failure or semantic conflict appears, stop expansion and return it to the manager. Recovery/fallback remains bounded by `routing-guide.md`.
+Tell every executor to run the named verification commands, with cwd and expected results. Require actual command/cwd/exit code and concise failure evidence; “implemented” is not “verified.” Save long logs outside tracked source and return an evidence index. Tell the executor to deliver once the agreed checks pass and no criterion is unresolved, without unsolicited hardening, scope expansion or repeated broad checks after green. If a new assumption, out-of-scope failure or semantic conflict appears, stop expansion and return it to the manager; a recurring environment/capability failure returns as a blocker rather than a retry loop. Recovery/fallback remains bounded by `routing-guide.md`.
 
 Spark is documented as text-only: the manager must translate screenshot requirements into concrete text and perform visual acceptance with a capable model/tool. Do not send images to Spark or accept a claimed screenshot review. If visual evidence cannot be checked, report that acceptance as pending.
 

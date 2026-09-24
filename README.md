@@ -10,7 +10,7 @@
 | `travel-research-maps` | 可用 | 用 Keyless Firecrawl、浏览器与电脑控制研究景点或餐厅，生成审核清单，并在批准后保存到 Google Maps | “研究京都景点”“推荐成都餐厅”“把审核清单加入地图列表” |
 | `plan-project-docs` | 可用 | 将已完成 plan 或现有项目证据整理为最小必要的 `docs/planning/` 项目指导文档 | “把这个计划存到项目文件夹”“根据现有项目生成项目文档” |
 | `product-demand-discovery` | 可用 | 用 Firecrawl 公开互联网证据发现产品机会、评分、去重并保存研究报告 | “发现某领域的产品机会”“找有需求但竞品不拥挤的方向” |
-| `subagent-orchestrator` | 可用 | 按交接与验收成本选择委派，执行器实现自检，写入 DeepSeek 优先 | “追踪这段代码”“查 CI 失败原因”“实现并测试这个功能” |
+| `subagent-orchestrator` | 仅显式调用 | 按交接与验收成本选择委派，单 worker 串行、执行器实现自检，写入 DeepSeek 优先 | “使用 $subagent-orchestrator 实现并测试这个功能” |
 
 ## How This Repository Works
 
@@ -209,19 +209,23 @@ python3 -m unittest test_score_candidates.py
 
 路径：`subagent-orchestrator/`
 
+仅在用户输入 `$subagent-orchestrator` 或明确要求使用这个 skill 时启用。普通调查、实现、验证或泛指使用子代理的请求不会自动触发；`agents/openai.yaml` 已设置 `allow_implicit_invocation: false`。
+
 ### 功能
 
-`subagent-orchestrator` 先判断工作能否独立交付、需要多少交接材料，以及主模型能否用少量证据验收，再选择直接执行、确定性工具或委派。小改动、已知强耦合工作和固定命令可直接完成；范围扩大时重新判断。主模型保留需求、方案、关键决策和最终验收，不再以固定搜索次数触发委派。
+调用 skill 也不必委派：默认直接推进，只有遇到边界明确、交接上下文少、能短交付且主模型不用重做全过程的工作时才使用 subagent。门槛成立后及时交出去，不为判断是否委派而先把工作做完。
 
-通过委派门槛后，定向只读 **Spark medium → Luna low → 主模型**，广泛只读分析 **Luna low → 主模型**；写入 **DeepSeek → Spark → Luna → Terra**，原生写入 medium。Spark 必须符合[任务边界](subagent-orchestrator/references/spark-worker.md)且当前工具可调用；不支持就跳过，不使用替代配置绕过。禁止 Sol 和嵌套委派；原生 spawn 前检查实时并发位，显式模型/档位、`fork_turns: "none"`。
+`subagent-orchestrator` 的核心约束是：**同一时间只运行一个 subagent，每次交给它一块完整工作，主模型保留关键决策和验收。** 角色不写死：需要代码证据时可先派只读 subagent，主模型据此计划后再派 writer；方案清楚时可直接派 writer。范围、能力和权限合适时续用原 worker，不强制固定角色链，也不要求整个任务只用一个 worker。
 
-默认一个执行器负责同一切片的实现、相关测试及首次交付前的范围内修正；主模型复用证据并检查实际 diff 和集成结果。同步 runner 负责等待与收据，不反复读取进行中日志；普通文本补丁经主模型审查后用确定性工具应用，固定命令不单独派整合代理。详见[执行与整合](subagent-orchestrator/references/execution-flow.md)。
+主模型委派前只读指令、状态、必要接口与验收阻塞点；后续复用调查结果，按实际 diff 和关键证据验收，避免重复探索。一个 writer 通常负责实现、相关测试/文档和范围内自修。worker 接收必要路径、已接受决策与验收标准，不继承完整父会话；大日志保存在产物中。
 
-写入任务通过 [worker-result.json](subagent-orchestrator/references/worker-result.md) 交付完成情况、检查结果、未完成条件与证据位置；模型和用量仍记在 receipt。证据缺失不能从 CLI 退出码推断成功。自检和主验收通过即结束；只在交付后发现具体范围内缺陷时，优先续接原生 writer，保留原 slice 并计入恢复预算。DeepSeek 仍为一次性 HEAD-only 执行。
+定向只读路线为 **Spark medium → Luna low → 主模型**，较广分析从 Luna low 开始；写入路线为 **DeepSeek → Spark → Luna → Terra**，原生写入 medium。Spark 须符合[任务边界](subagent-orchestrator/references/spark-worker.md)且工具可调用；不支持则跳过。前一个执行停止后才开始下一角色或 fallback；空闲并发位不构成加派理由。原生 spawn 前检查运行状态，显式指定模型/档位和 `fork_turns: "none"`，禁止 Sol 和嵌套委派。
 
-最多每切片 3 次执行、整项任务共享 2 次恢复、同路线 1 次定向重试，首次交付后的修正计入恢复。执行失败和未知用量保留；runtime 并行与权限约束不因技能而放宽。
+检查通过且无未决要求后交付，不追加未经请求的审计或加固；相同环境/能力错误无新证据或条件变化时报告阻塞。主模型通过 [worker-result.json](subagent-orchestrator/references/worker-result.md)、实际补丁与验证证据验收；具体范围内缺陷优先以增量上下文续接原生 writer。DeepSeek 仍是一次性 HEAD-only 执行，后续尝试不等于会话恢复。
 
-完整优化设计与后续 A/B/C 测量方案见[规划文档](docs/planning/technical-design.md)。新规则与工具不等于已经测得 Token 节省；旧全局强制委派规则仍优先，技能同步不修改全局 AGENTS.md。
+固定检查、等待、收据和审过的补丁应用由确定性工具完成，不为这些步骤另派代理。保留每切片最多 3 次执行、任务共享 2 次恢复、同路线 1 次定向重试；具体规则见[执行与整合](subagent-orchestrator/references/execution-flow.md)。串行和停止规则是指令约束，不能放宽 runtime 权限，也不是硬用量上限。
+
+评估顺序是**质量 → 主模型用量 → 按模型计价的总费用 → 耗时**。全模型 token 用于诊断；费用比较须核实当时的官方费率，缺失时保留未知，不从 API 价格推断订阅额度。[改版计划与后续对照方案](docs/planning/technical-design.md)记录设计；本版尚未证明实际节省，技能同步不会修改全局 AGENTS.md。
 
 ### 怎么用
 
@@ -238,7 +242,7 @@ subagent-orchestrator/scripts/run-dsh-worker.sh \
 
 ### 边界
 
-- 委派必须有界、可验证；存在依赖时仅在运行环境允许的情况下串行委派。架构、安全判断、语义冲突和最终验收留在主 Agent；外部 worker 继续排除认证、支付、迁移和破坏性操作。
+- 委派必须有界、可验证；整个用户任务跨原生与外部路线只有一个在跑 worker，依赖存在时按串行顺序执行，空闲并发位不构成加派理由。架构、安全判断、语义冲突和最终验收留在主 Agent；外部 worker 继续排除认证、支付、迁移和破坏性操作。
 - DeepSeek worktree 只是 Git 冲突隔离，不是操作系统安全沙箱，不得传递 secrets、Cookie、私钥、`.env` 值或私密会话。
 - runner 不创建分支或 commit，也不自动应用 patch。主 Agent 必须检查 manifest、scope、实际 diff 和验证结果。
 - 如果允许路径存在主工作区未提交改动，外部 runner 会拒绝启动；无关脏文件不会阻止执行。

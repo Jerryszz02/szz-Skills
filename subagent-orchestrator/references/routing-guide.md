@@ -2,6 +2,10 @@
 
 Optimize main-model work and successful task completion. Delegation can reduce main-model context and still increase total tokens; do not equate model names, lower unit prices, or parallelism with measured savings.
 
+## Serial Execution, Flexible Roles
+
+For one user task, keep at most one active worker across native and external routes. Dispatch serially: start the next route only after the previous execution has stopped and its result/evidence is recorded. Spare runtime concurrency slots never justify another worker, and a running execution never justifies a speculative backup. Roles may change between serial stages; the limit is concurrent workers, not the number of roles in a task. Choose the next useful question or outcome and batch related work. A read-only worker may gather evidence for the manager to plan before a writer implements, but this sequence is optional. Reuse the same worker when scope, capability and permissions fit, and preserve accepted evidence when a new role is needed. Reuse a valid result for unchanged state instead of re-dispatching.
+
 ## Decision Matrix
 
 | Task shape | Route | Constraints |
@@ -16,10 +20,12 @@ Optimize main-model work and successful task completion. Delegation can reduce m
 
 ## Applying the Gate
 
-- Before substantial execution, inspect rules/Git state with small targeted reads. Identify an independently owned result, minimum handoff context and acceptance that avoids reconstructing the work. Broad isolated search or implementation with clear tests favors delegation; known coupled edits, cheap direct evidence or acceptance nearly as expensive as implementation favor direct work. Do not finish a delegable investigation before dispatch or infer savings from size alone.
+- Direct execution is the starting mode, even after explicit skill invocation. Do not run a role/model-selection ceremony for every task. Delegate when a bounded part needs little shared context and can return a compact result that replaces manager work; stay direct when accepting it would require replaying most of the investigation or implementation. This gate is a brief decision, not another planning stage, and it is not a reason to finish the work before handing it off.
+- Before substantial execution, inspect rules/Git state with small targeted reads. Read only instructions/state, essential interfaces and acceptance blockers - not a full scout pass or a pre-solved implementation. Identify an independently owned result, minimum handoff context and acceptance that avoids reconstructing the work. Broad isolated search or implementation with clear tests favors delegation; known coupled edits, cheap direct evidence or acceptance nearly as expensive as implementation favor direct work. Do not finish a delegable investigation before dispatch or infer savings from size alone.
 - There is no fixed search-count or numerical token threshold. State a concrete reason, honor explicit user/higher-priority policy and runtime constraints, and reassess if scope/failures grow. Direct selection is not permission for unlimited exploration. An unknown path can justify a compact scout rather than a broad manager read.
-- For implementation, the root defines observable acceptance and write ownership. One worker may implement and run relevant tests. Reuse evidence and workers when their route, effort and permissions fit; do not force scout → executor → verifier handoffs or silently upgrade a scout to write access.
-- Sequential work is eligible only when the active dispatch tool permits it. For a native tool requiring independent work alongside useful manager work, identify that work honestly; do not invent busywork or relabel the same blocked call through another route. If no permitted route fits, state the concrete constraint and take over.
+- For implementation, the root defines observable acceptance and write ownership. One writer may investigate locally, implement and run relevant tests; a prior read-only stage is useful when the manager needs its evidence to decide the plan. Batch each role's related work instead of dispatching tiny file-by-file errands. Reuse evidence and workers when their route, effort and permissions fit; do not force scout → executor → verifier handoffs or silently upgrade a scout to write access.
+- Sequential work is eligible only when the active dispatch tool permits it. Keep at most one active worker for this user task; advance to a fallback route only after the previous execution has stopped. For a native tool requiring independent work alongside useful manager work, identify that work honestly; do not invent busywork or relabel the same blocked call through another route. If no permitted route fits, state the concrete constraint and take over.
+- Apply the stopping rules before first delivery and after: self-check the agreed requirements, fix concrete in-scope defects, then deliver immediately once checks pass and no criterion is unresolved. No unsolicited audit, hardening, feature expansion or repeated broad checks after green. On the same environment/capability failure recurring without new evidence or a concrete changed condition, stop and report the blocker; a precise hypothesis justifies one bounded retry.
 - Before substantial work, briefly identify the delegated slice and manager decisions. After dispatch record the actual agent ID or runner artifact directory. Distinguish missing skill, direct exception, blocked dispatch, worker failure, and accepted worker result. A plan is not proof of execution.
 
 Skill discovery and text instructions are not runtime enforcement. Check the loaded path/version and tool restrictions before diagnosing failure; reload the registry after installation updates. Global policy is optional user configuration: see `global-policy.md`.
@@ -42,16 +48,16 @@ Skill discovery and text instructions are not runtime enforcement. Check the loa
 
 ## Native Spawn Gate
 
-Only the root may dispatch. Immediately before each `spawn_agent`:
+Only the root may dispatch. Keep at most one worker active for this user task. Immediately before each `spawn_agent`:
 
-1. Call `list_agents`; count live workers plus root against the active runtime limit.
+1. Call `list_agents`; count live workers plus root against the active runtime limit and confirm no worker for this task is still running. Queue the fallback until the current execution stops.
 2. When no slot remains, queue or wait. Do not hardcode an older concurrency limit.
 3. Pass explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and the route's task packet. Prohibit all nested delegation.
 
 ## Integration Contract
 
 - The root reviews scope, patch content, and evidence, then identifies the exact approved artifact (path plus digest) and target workspace. Worker creation does not itself authorize applying arbitrary patches.
-- Finish target-workspace writers first. Use one deterministic integration/check operation at a time; independent work elsewhere may continue. Record starting HEAD and dirty paths, preserve unrelated edits, and check patch applicability before applying. Use `apply_approved_patch.py` for supported text patches after root review; unsupported patches require a separately reviewed procedure.
+- Finish target-workspace writers first. Use one deterministic integration/check operation at a time and do not start a worker while it runs. Record starting HEAD and dirty paths, preserve unrelated edits, and check patch applicability before applying. Use `apply_approved_patch.py` for supported text patches after root review; unsupported patches require a separately reviewed procedure.
 - Limit integration to approved patch application and mechanical operations. A semantic conflict, shared-interface change, new failure needing code changes, or out-of-scope operation returns evidence to the manager for a decision or a bounded repair packet.
 - Name required commands and evidence output paths. Capture command, cwd, exit code, and concise result; store full logs outside the tracked project. Check the integrated state, including uncommitted changes. A stale pre-integration pass is insufficient.
 - Verification alone must not silently repair source files. A corrective follow-up counts toward recovery limits. Root still owns final review, risk decisions, and acceptance; publication requires the task's existing authorization.
@@ -70,6 +76,6 @@ The root tracks these limits in its ledger; existing one-shot runners do not enf
 
 ## Context and Return Budget
 
-- Task packets carry relevant facts and paths, not whole conversation history or broad copied files. Workers read owned code directly. Prefer one cohesive slice to many trivial ones.
-- Target at most 250 words in each worker's final prose: status, changed paths, concise result, exact checks/exit codes, blockers, and artifact locations. Put full logs and long evidence in files. Expand only for an actionable issue that cannot be represented safely in that budget.
+- Task packets carry relevant facts, paths and accepted decisions, not whole conversation history or broad copied files. Workers read owned code directly with bounded excerpts; keep bulky evidence in artifacts. Prefer one cohesive outcome slice to many trivial ones.
+- Target at most 250 words in each worker's final prose: what is done, key findings, concerns or deviations, and evidence locations. Writers use the existing result schema with exact check evidence; do not add a second long narrative. Put full logs in artifacts. Expand only for an actionable issue that cannot be represented safely in that budget.
 - Request updates on completion, failure, or a decision needed. Do not poll full logs or require routine narration. The manager reads critical evidence and actual diffs without replaying the worker's entire search.

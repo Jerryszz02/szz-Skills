@@ -1,6 +1,6 @@
 # Compact Worker Result
 
-Use for source-writing delivery after implementation, related checks and in-scope self-correction. A result describes work and verification; `worker-receipt.json` separately records model/usage. Root still reviews the actual diff and focused evidence. A well-formed worker claim is not independent acceptance.
+Use for source-writing delivery after implementation, related checks and in-scope self-correction. Apply the stopping rule before this report as well: self-check the agreed requirements, fix concrete in-scope defects, then report once checks pass and no criterion is unresolved. A result describes work and verification; `worker-receipt.json` separately records model/usage. Root still reviews the actual diff and focused evidence. A well-formed worker claim is not independent acceptance.
 
 ## Writer Report
 

@@ -18,7 +18,7 @@ Keep the entrypoint and observed model separate. Preserve `actual_model`, the ev
 
 ## Record Every Route Outcome
 
-Runners already wait and collect receipts. Follow `execution-flow.md`: launch once, use completion waits, and read the final compact result. Do not re-probe healthy providers, tail live reasoning or regenerate unchanged summaries for progress.
+Runners already wait and collect receipts. Follow `execution-flow.md`: launch once, use completion waits, and read the final compact result. Keep one active worker for the task; start a fallback only after the running execution stops and its outcome is recorded. Do not re-probe healthy providers, tail live reasoning or regenerate unchanged summaries for progress.
 
 Pass stable `--slice-id ID --attempt N` to the runner. Without a slice ID, it uses the task-packet digest prefix; supply an explicit ID across corrected packets so recovery history stays stable.
 

@@ -130,6 +130,17 @@ scope. Do not create commits, branches, worktrees, or change Git configuration.
 Do not read, request, print, or store secrets. Run the required verification and
 inspect your diff.
 
+You are the single owner of this outcome packet and continue in this one
+workspace; do not start a second stream or restart investigation from scratch.
+Avoid repeated full-file/log dumps. Use bounded excerpts, paths and decisions
+rather than prior chat, and keep bulky evidence in artifacts.
+Self-check the agreed requirements and fix concrete in-scope defects, then
+deliver as soon as the required checks pass and no criterion is unresolved. Do
+not add unrequested audit, hardening, feature expansion or repeated broad checks
+after green. If the same environment or capability failure recurs without new
+evidence or a changed condition, stop and report the blocker; a precise
+hypothesis justifies at most one bounded retry.
+
 After implementation and your relevant self-check or correction, your entire
 final response must be one JSON object or one fenced JSON block, with no
 surrounding prose. Use schema_version 1:

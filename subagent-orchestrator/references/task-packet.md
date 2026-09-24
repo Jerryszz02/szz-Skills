@@ -1,6 +1,6 @@
 # Task Packet Contract
 
-For native read-only tasks, use the compact packet in `read-only-worker.md` instead. Use the following template for external execution and native source-writing tasks. Keep each packet limited to one independently verifiable responsibility. Include stable slice ID, role, attempt number, remaining task recovery budget, and artifact output directory in the Objective or additional sections. These orchestration fields are tracked by the root; the external packet validator only enforces its existing required sections.
+For native read-only tasks, use the compact packet in `read-only-worker.md` instead. Use the following template for external execution and native source-writing tasks. Each packet should cover a complete useful question or independently verifiable outcome, with related work batched together. Roles are optional and serial: a read-only result may inform the manager's plan before implementation, or a writer may investigate locally, implement, test and self-correct in one packet. Do not impose a fixed sequence or a different worker for every file/phase. Include stable slice ID, role, attempt number, remaining task recovery budget, and artifact output directory in the Objective or additional sections. These orchestration fields are tracked by the root; the external packet validator only enforces its existing required sections.
 
 ```markdown
 # Task Packet
@@ -11,7 +11,7 @@ Describe the observable result to produce.
 
 ## Dependencies
 
-Write `none` for parallel work, or list the decisions and task results that must exist first.
+Write `none` when the outcome depends on no prior result, or list the decisions and task results that must exist first.
 
 ## Allowed paths
 
@@ -45,7 +45,7 @@ forbidden
 yes
 ```
 
-Include implementation, related tests and in-scope self-correction in one writer's responsibility. Name available acceptance commands/dependencies so it can self-check before first delivery. Return unresolved environment/interface decisions to root. Put prose in Dependencies, not among Allowed/Forbidden path bullets; validate the packet once before launch. See `execution-flow.md` for waiting, handoffs and recovery accounting.
+Include implementation, related tests and in-scope self-correction in one writer's responsibility. Supply paths and accepted decisions plus precise acceptance criteria, not whole chat, files or logs. Name available acceptance commands/dependencies so it can self-check before first delivery. State the stopping rule: self-check the agreed requirements, fix concrete in-scope defects, then deliver immediately once checks pass and no criterion is unresolved; no unsolicited audit, hardening or repeated broad checks after green, and a recurring environment/capability failure returns as a blocker instead of a tool/install loop. Return unresolved environment/interface decisions to root. Put prose in Dependencies, not among Allowed/Forbidden path bullets; validate the packet once before launch. See `execution-flow.md` for waiting, handoffs and recovery accounting.
 
 ## Native Worker Additions
 
@@ -61,6 +61,7 @@ For Spark, first apply `spark-worker.md`; keep DeepSeek ahead of it on source-wr
 - State `HEAD-only dependency: no` when inspecting current uncommitted changes. Native packets are not passed through the external HEAD-only validator.
 - Writers return the JSON report in `worker-result.md`; preserve raw responses and bulk logs in artifacts. Read-only workers keep the compact evidence response in `read-only-worker.md`.
 - Attempt number and remaining recovery allowance; workers report failures instead of spawning retries or silently expanding repairs.
+- For a same-owner continuation, send only the unmet criterion, focused evidence, the workspace delta and the remaining budget; do not replay the whole packet or reset the attempt/recovery counts.
 - The unified receipt fields required by `worker-receipt.md`.
 - That the worker is not alone in the repository and must not revert unrelated changes.
 - That `spawn_agent`, nested agents, and every other form of worker delegation are forbidden. Only the root/main agent may dispatch workers.
