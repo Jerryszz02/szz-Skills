@@ -13,6 +13,7 @@
 - runner 不自动应用 patch。主 Agent 必须检查 manifest、scope、status、patch 和实际验证结果。确定性 helper 只有在显式绑定审过的 SHA-256、HEAD、任务 scope 并传入 `--apply` 后写入；普通文本范围之外的补丁返回主 Agent。
 - helper 从已校验的同一份字节解析/应用 patch，拒绝软链接、越界和重叠 staged/unstaged/untracked/ignored 数据，保留无关修改；不执行 patch 内命令、不改 index、不做自动回滚。主 Agent 必须串行协调写入，helper 不提供跨进程锁。
 - 只有根/主 Agent 可以调用 `spawn_agent`；所有 worker 的 task packet 都必须显式禁止嵌套委派。
+- 一个用户任务跨原生与外部路线只保持一个在跑 worker 并串行执行；fallback 在上一条执行停止并记录结果后开始，空闲并发位不用于加派。
 - 原生 spawn 前检查实时并发余量；没有空位时不通过失败调用探测容量。
 
 ## 凭据处理

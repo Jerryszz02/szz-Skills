@@ -1,6 +1,6 @@
 interface:
   display_name: "Subagent Orchestrator"
-  short_description: "按交接与验收成本选择委派，同一执行器实现自检，机械协调交给工具"
-  default_prompt: "使用 $subagent-orchestrator 按隔离性和验收成本选择直接执行或委派，让同一执行器实现并自检，保留 DeepSeek 优先写入与主模型最终验收，用确定性工具减少协调往返。"
+  short_description: "串行委派、按需分工，同一执行器持续推进，减少主模型读取与交接"
+  default_prompt: "使用 $subagent-orchestrator，按需要串行安排读代码或实现工作，每次交付一块完整结果并尽量续用原 worker，由主模型保留关键决策与验收，减少主模型用量和总费用。"
 policy:
   allow_implicit_invocation: false

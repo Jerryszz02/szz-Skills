@@ -2,6 +2,8 @@
 
 Measure three separate outcomes: main-model tokens, total tokens across all agents, and successful task completion/time. Lower main-model usage does not prove lower total usage or lower price/account quota consumption. Keep cached input, output, provider, model, and reasoning metadata in the original receipts for any later price analysis; this tool does not calculate prices.
 
+Rank results by the evaluation priority: quality gate first, then main-agent usage (response count, mean input, cache), then total cost priced separately by actual model and cached/uncached/output rates, then latency. All-model tokens remain diagnostic: a cheap worker consuming more tokens is not automatically a failure. For price comparisons, verify dated official per-model rates and price cached/uncached input and output separately; missing rates or counters leave cost unknown. API prices do not establish subscription-quota consumption.
+
 ## Offline Checks (No Model Calls)
 
 From the repository root:
@@ -36,6 +38,19 @@ For a meaningful change to routing, use an isolated fixture and an independent p
 | Writer self-check and final acceptance both pass | Finish; no mandatory correction or second worker review. |
 | Delivered native writer has one reproducible in-scope omission and recovery remains | Continue that writer with focused failure evidence; same slice, next attempt, incremental usage. |
 | Missing or contradictory structured result despite CLI exit zero | Preserve raw artifacts and mark result unverified/incomplete; do not infer passing checks. |
+| Two independent bounded questions and free runtime slots | One active worker; fold into one packet or run serially; free slots never justify fan-out. |
+| Feature needing investigation, implementation and related tests | Flexible serial stages: use a read-only result for planning when needed, otherwise go directly to a writer; batch related work, with no fixed role sequence or mandatory single worker for the entire task. |
+| Long manager context, many changed files, full logs | Packet carries paths, accepted decisions and acceptance criteria only; bounded excerpts with bulk evidence in artifacts. |
+| Writer's checks pass while hardening ideas remain | Deliver immediately; stopping rule applies before first delivery; no unsolicited expansion or repeated broad checks after green. |
+| Same environment/capability failure recurs without new evidence | Stop and report the concrete blocker; no install/browser/tool loop and no invented token/turn cap. |
+| Native model catalogued but rejected by the active spawn tool | Skip before execution, record the reason and advance serially; no custom config/CLI workaround. |
+| Ordinary request without explicit skill invocation | Do not activate this skill; ordinary delegation remains governed by the user and applicable instructions. |
+| Quality passed but a cheap worker used more tokens | Diagnostic all-model total, not automatically a failure; price total cost by actual model and cached/uncached/output rates; no fabricated savings/quota. |
+| Code evidence is needed before the manager can plan | A serial read-only stage followed by planning and, if needed, writing is allowed; preserve evidence across roles. |
+| A clear plan and a current writer able to finish implementation/tests | Reuse that writer; no mandatory scout/tester stages or new worker just to change phase. |
+| Explicit skill invocation for a known tiny edit | Direct completion; invocation is not a mandate to orchestrate or load worker manuals. |
+| Handoff needs most of the parent history and a full manager replay | Keep direct or redefine a bounded question with compact evidence; no presumed savings. |
+| Relevant state changed after the worker collected evidence | Refresh only affected evidence before accepting; do not rely on stale findings. |
 
 This exercises instructions, not the real execution harness. It uses evaluator tokens, so record it as an evaluation attempt. A forward-test failure supports a focused correction; do not repeat evaluation indefinitely.
 
@@ -105,7 +120,7 @@ Malformed inputs and inconsistent totals return a nonzero exit with an error; in
 
 ## Before Dispatch: Predict Without Fabricating Savings
 
-Prefer delegation when a worker can consume substantial independent work and return compact evidence the manager will not reconstruct. Direct work is valid for known coupled tasks and cheap evidence; fixed commands use deterministic tools. No search-count threshold or invented numeric savings decides this. Use the task battery in `test-tasks.md` to calibrate the gate.
+Prefer delegation when a worker can consume substantial independent work and return compact evidence the manager will not reconstruct. Direct work is valid for known coupled tasks and cheap evidence; fixed commands use deterministic tools. No search-count threshold or invented numeric savings decides this. Keep one active worker per user task across native and external routes and run them serially; do not fan out independent parts or start a fallback before the previous execution has stopped. Use the task battery in `test-tasks.md` to calibrate the gate.
 
 Treat successful acceptance as a prerequisite. Track manager tokens, total tokens, latency and recovery separately; price/quota savings require their own valid accounting. Missing telemetry limits accounting, not native correctness acceptance.
 
