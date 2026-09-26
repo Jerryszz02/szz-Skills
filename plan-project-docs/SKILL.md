@@ -1,6 +1,6 @@
 ---
 name: plan-project-docs
-description: 根据正式 plan 和项目真实证据创建、审计或同步 docs/planning 指导文档。用于归档大型 plan、执行正式 plan 前准备文档、为现有项目补文档，以及在实现、测试、发布、重命名、暂停或取消后核对并修正文档与当前状态的偏差。任务范围明确包含时，也同步根 README（面向公众/首次访问者）与 docs/ 下开发者指南（代码现状文档，区别于 planning 设计文档）。
+description: "用户要求创建、审计或同步 docs/planning，或归档已认可的正式 plan 时使用。依据当前项目证据核对状态；README 与开发者指南仅在请求范围包含时处理。"
 ---
 
 # Plan Project Docs
