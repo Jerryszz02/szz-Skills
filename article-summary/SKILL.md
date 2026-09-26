@@ -1,6 +1,6 @@
 ---
 name: article-summary
-description: Summarize a user-provided article, public URL, webpage, PDF, Word document, or text in the original order. Use for Chinese requests such as "总结一下", "告诉我这篇文章讲了什么", "概括这篇文章", "帮我总结这篇", or equivalent requests in any language. Map key points to original sections or paragraphs, audit factual accuracy and ambiguity, and create a PDF only when the user explicitly asks for an exported document or PDF.
+description: "Summarize a supplied article in source order, with source locations and factual caveats. Use for article, webpage, PDF, Word, or pasted-text summaries; export a document only when requested."
 ---
 
 # Article Summary

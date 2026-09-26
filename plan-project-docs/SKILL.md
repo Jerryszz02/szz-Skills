@@ -1,6 +1,6 @@
 ---
 name: plan-project-docs
-description: 根据正式 plan 和项目真实证据创建、审计或同步 docs/planning 指导文档。用于归档大型 plan、执行正式 plan 前准备文档、为现有项目补文档，以及在实现、测试、发布、重命名、暂停或取消后核对并修正文档与当前状态的偏差。任务范围明确包含时，也同步根 README（面向公众/首次访问者）与 docs/ 下开发者指南（代码现状文档，区别于 planning 设计文档）。
+description: "用户要求创建、审计或同步 docs/planning，归档或执行已认可的正式 plan 时使用；执行 plan 时先准备 planning 文档。依据当前项目证据核对状态；README 与开发者指南仅在请求范围包含时处理。"
 ---
 
 # Plan Project Docs
@@ -9,6 +9,7 @@ description: 根据正式 plan 和项目真实证据创建、审计或同步 doc
 
 ## 按任务读取
 
+- **执行已认可的正式 plan**：即使用户未提及 `docs/planning/`，也先按 [planning-workflow.md](references/planning-workflow.md) 创建或更新 planning 文档，再继续执行原任务。
 - **创建、更新或审计 planning 文档**：读 [planning-workflow.md](references/planning-workflow.md)。需选择或重新评估文档集合时，读 [document-catalog.md](references/document-catalog.md)。已有 `docs/planning/` 时按状态同步处理。
 - **更新或审计已有文档，或涉及测试、发布、运行状态**：读 [state-consistency.md](references/state-consistency.md)，核对证据、状态词、历史记录和跨文档冲突。状态变化后重新评估曾跳过的文档。
 - **范围明确包含根 README 或 `docs/` 下开发者指南**：读 [repository-docs.md](references/repository-docs.md)；开发者指南的适用判断另见 document-catalog 的「仓库级配套文档」。仅因 planning 需要互链，不要创建或修改范围外文档。
